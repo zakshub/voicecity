@@ -33,7 +33,15 @@ Deliverables: product requirements, architecture, UX direction, privacy rules, m
 - [x] WCAG 2.2 visible label/name alignment, keyboard navigation, `:focus-visible`, RTL Urdu script input, and truthful missing-engine states.
 - [x] Conditional MP3 export UI alongside lossless WAV download.
 
-## Phase 4: Packaging and handover
+## Phase 4: Speech engine integration
+**Status: Adapters implemented and contract-tested; live audio listening & hardware benchmarks pending Linux Mint laptop.**
+
+- [x] Default commercially permissive engine adapter: `indic_parler_openvoice` (`ai4bharat/indic-parler-tts` Apache-2.0 + `myshell-ai/OpenVoiceV2` MIT) supporting Urdu, English, and deterministic mixed Urdu-English synthesis with CPU fallback and CUDA auto-detection.
+- [x] Secondary direct zero-shot Urdu adapter: `f5_tts_urdu` (`SWivid/F5-TTS` MIT + `multilingual-tts/F5-TTS-OpenBible-Urdu` CC-BY-SA-4.0), truthfully constrained to Urdu-only with explicit offline transcript guard.
+- [x] Non-commercial weights (`Meta MMS Urdu`, `Coqui XTTS-v2`, `Fish Speech 1.5`) excluded from distributable defaults.
+- [ ] Execute live audio generation and 1–5 human listening review on the Linux Mint laptop.
+
+## Phase 5: Local Linux Mint packaging and handover
 - Reproducible setup instructions.
 - Local launch script or desktop shortcut.
 - Backup and restore guidance.
