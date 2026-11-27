@@ -1,63 +1,60 @@
 # VoiceCity
 
-**A local-first voice studio for personal voice cloning and speech generation in Urdu and English.**
+**An original, local-first personal voice studio for Urdu, English, and mixed Urdu-English voice cloning and speech generation.**
 
-VoiceCity is an original application project focused on helping a user create, manage, test, and use a personal voice profile for text-to-speech generation. The initial target is a private, locally run application on Linux.
+VoiceCity helps you import your own WAV recording once, inspect its acoustic health, automatically prepare a clean reference clip, and generate Urdu, English, and mixed Urdu-English speech completely on your own Linux computer via a local browser workspace (`http://127.0.0.1:8765`).
 
 ## Project status
 
-**Stage:** Foundation and discovery  
-**Implementation status:** Initial scaffold only  
-**Model selection:** Pending evidence-based evaluation  
-**Primary languages:** Urdu and English, including mixed Urdu-English text  
-**Initial deployment target:** Local Linux desktop, accessed through a browser  
-**Cost principle:** Prefer free, locally runnable components. No paid API is assumed.
+- **Application Core (Backend + Desktop Web UI + Audio Pipeline):** Implemented and tested
+- **Speech Engine Adapters:** Implemented (`indic_parler_openvoice` commercial default; `f5_tts_urdu` secondary Urdu-only adapter)
+- **Live Model Listening & Laptop Hardware Benchmarks:** **Pending execution on the target Linux Mint laptop** (heavyweight model checkpoints were intentionally NOT downloaded onto the Pixel 7 Pro PRoot dev environment)
+- **Primary languages:** Urdu (`ur`), English (`en`), and mixed Urdu-English (`mixed`)
+- **Initial deployment target:** Linux Mint desktop, accessed locally at `http://127.0.0.1:8765`
+- **Cost & Privacy principle:** Free, local-first, zero paid APIs, zero cloud voice upload by default
 
-This repository contains the product definition, technical plan, application scaffold, and implementation handoff. It does not contain model weights, user voice recordings, generated audio, or credentials.
+## Selected Speech Engines & Licensing
 
-## Product direction
+| Engine ID | Components | Code License | Weight License | Languages | Role |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `indic_parler_openvoice` | `ai4bharat/indic-parler-tts` + `myshell-ai/OpenVoiceV2` | Apache-2.0 + MIT | **Apache-2.0 + MIT** | Urdu, English, Mixed | **Distributable Commercial Default** |
+| `f5_tts_urdu` | `SWivid/F5-TTS` + `multilingual-tts/F5-TTS-OpenBible-Urdu` | MIT | **CC-BY-SA-4.0** | Urdu only | Secondary direct zero-shot Urdu option |
 
-- Import a user's own voice recording.
-- Create and manage a local voice profile.
-- Generate speech from Urdu, English, and mixed Urdu-English text.
-- Preview generated audio before export.
-- Export generated audio in supported formats.
-- Keep voice recordings, profiles, and generated audio on the user's device by default.
-- Keep the speech engine replaceable through a model adapter interface.
+*Non-commercial models (`Meta MMS Urdu` CC-BY-NC-4.0, `Coqui XTTS-v2` CPML, `Fish Speech 1.5` CC-BY-NC-SA-4.0) are explicitly excluded from the distributable default configuration. See [docs/MODEL_EVALUATION.md](docs/MODEL_EVALUATION.md) and [docs/discovery_report.md](docs/discovery_report.md).*
 
-## Important constraints
+## What Is Implemented
 
-- Do not train a foundation voice model from scratch as part of the initial project.
-- Do not select a model until language quality, reference-audio requirements, hardware needs, license terms, and commercial-use permissions have been checked.
-- Do not assume that a model supporting Hindi or multilingual speech necessarily produces natural Pakistani Urdu.
-- Do not upload voice recordings to external services without a separate, explicit user decision.
-- Do not commit model weights, recordings, generated audio, secrets, or local runtime data to Git.
+- **7-Screen Desktop Web UI (`frontend/`):** Dashboard, Voice Library, Create Voice Profile, Text to Speech Studio (with RTL Urdu support & live mixed-script segment inspector), Audio Preview (with side-by-side comparison), Generation History, and Settings & Diagnostics.
+- **Pure-Python WAV Validation & Reference Preparation (`app/audio/service.py`):** Validates RIFF/WAVE PCM headers, inspects duration, sample rate, channels, bit depth, peak/RMS dBFS, clipping, and silence ratio, preserves the original ~2-minute WAV untouched, and automatically extracts a normalized 24 kHz mono 6–10s reference clip.
+- **Local-First Storage (`app/core/storage.py`, `app/core/database.py`):** SQLite persistence + confined filesystem directories (`data/`, `models/`) kept strictly outside Git.
+- **WAV & Optional MP3 Export:** Lossless WAV download built in; MP3 export activates automatically when `ffmpeg` is installed.
+- **Hardware Discovery & Linux Mint Tooling (`scripts/`):** `hardware_probe.py`, `poc_eval.py`, `install_linux_mint.sh`, `download_models.py`, `start_voicecity.sh`, `stop_voicecity.sh`.
+
+## Quick Start on Linux Mint
+
+See the complete non-technical guide in [docs/LINUX_MINT_GUIDE.md](docs/LINUX_MINT_GUIDE.md).
+
+```bash
+git clone https://github.com/zakshub/voicecity.git
+cd voicecity
+bash scripts/install_linux_mint.sh --with-engine indic_parler_openvoice --device auto
+.venv/bin/python scripts/download_models.py --engine indic_parler_openvoice
+bash scripts/start_voicecity.sh
+```
+
+Then open **http://127.0.0.1:8765** in your browser.
 
 ## Repository map
 
-- `app/`: application source scaffold
-- `docs/`: product, architecture, UX, privacy, evaluation, and delivery documentation
-- `tests/`: initial automated test scaffold
-- `scripts/`: development and maintenance helpers
-- `pyproject.toml`: Python project configuration
-- `.env.example`: documented environment variable template
-- `.gitignore`: local data and secret exclusions
-
-## Getting started
-
-The scaffold is intentionally lightweight. Model runtimes and large dependencies are not installed by the foundation setup.
-
-See:
-1. [Development setup](docs/DEVELOPMENT.md)
-2. [Product requirements](docs/PRODUCT_REQUIREMENTS.md)
-3. [Architecture](docs/ARCHITECTURE.md)
-4. [Model evaluation plan](docs/MODEL_EVALUATION.md)
-5. [Antigravity handoff](docs/ANTIGRAVITY_HANDOFF.md)
-
-## Current limitations
-
-The current scaffold is not yet a functioning voice cloning product. It does not load a speech model, clone a voice, or generate audio. Those capabilities must be implemented only after the model and hardware evaluation is approved.
+- `app/`: FastAPI backend, audio pipeline, SQLite repository, Urdu/English text segmenter, speech engine adapters, diagnostics
+- `frontend/`: Zero-build desktop web studio UI served locally by FastAPI
+- `scripts/`: Hardware probe, PoC evaluation harness, Linux Mint installer, consent-driven model downloader, start/stop launchers
+- `docs/`: Product requirements, architecture, discovery report, model evaluation, Linux Mint guide, roadmap, privacy & security
+- `tests/`: Automated pytest suite (explicitly marking laptop-hardware neural listening tests as skipped/pending)
+- `pyproject.toml`: Python package configuration
+- `.env.example`: Environment variable template
+- `.gitignore`: Strict exclusions for audio recordings, embeddings, weights, SQLite DBs, and secrets
 
 ## License
 
-Project license has not yet been selected. See [open decisions](docs/OPEN_DECISIONS.md).
+Project license decision remains recorded in [docs/OPEN_DECISIONS.md](docs/OPEN_DECISIONS.md); all default dependencies and default speech model weights have been chosen for commercial compatibility (Apache-2.0 / MIT).

@@ -42,11 +42,16 @@ Deliverables: product requirements, architecture, UX direction, privacy rules, m
 - [ ] Execute live audio generation and 1–5 human listening review on the Linux Mint laptop.
 
 ## Phase 5: Local Linux Mint packaging and handover
-- Reproducible setup instructions.
-- Local launch script or desktop shortcut.
-- Backup and restore guidance.
-- Dependency and license inventory.
-- Release checklist and known limitations.
+**Status: Completed (`scripts/install_linux_mint.sh`, `scripts/download_models.py`, `scripts/start_voicecity.sh`, `scripts/stop_voicecity.sh`, `scripts/voicecity.desktop.template`, `docs/LINUX_MINT_GUIDE.md`).**
+
+- [x] Turnkey Linux Mint installation script with CPU/CUDA selection and PRoot phone guard.
+- [x] Consent-driven local model weight downloader displaying code + weight licenses and checking free disk space.
+- [x] Loopback-only (`127.0.0.1:8765`) start/stop scripts and `.desktop` launcher template.
+- [x] Non-technical user guide covering installation, model setup, WAV import, profile creation, speech generation, backup/restore, and troubleshooting.
+- [x] Updated README, open decisions, and architecture docs.
+
+## Phase 6: Quality assurance
+**Status: Pending final QA pass.**
 
 ## Deferred
 Video dubbing, transcription, live conversion, cloud sync, multi-user access, mobile app, and automated content production are outside the first release.

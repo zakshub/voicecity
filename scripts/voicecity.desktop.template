@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=VoiceCity
+Comment=Local Personal Urdu and English Voice Studio
+Exec=bash -lc "cd /REPLACE/WITH/PATH/TO/voicecity && bash scripts/start_voicecity.sh"
+Icon=audio-input-microphone
+Terminal=false
+Categories=AudioVideo;Audio;
+StartupNotify=false
