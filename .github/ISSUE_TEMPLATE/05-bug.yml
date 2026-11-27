@@ -1,13 +1,14 @@
 name: "05. Bug Report"
-description: "Report broken behavior, crashes, security flaws, or failed Acceptance Criteria."
+description: "Report broken behavior, crashes, or failed Acceptance Criteria (do not post private data or exploitable security vulnerabilities publicly)."
 title: "BUG: "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        **Bugs are tracked separately from Features and Tasks** so defects stay visible in the **Bugs and Risks** board view.
-        *(Never paste API keys, passwords, or private personal data into a bug report.)*
+        **Security & Privacy Notice:** Do **NOT** post exploitable security vulnerabilities, credentials, or real personal/participant data in public GitHub issues.
+
+        **Bugs are tracked separately from Features and Tasks.** For maintainers linking a bug to **Zakshub Portfolio**, set the **`Risk`** field (`Low` for P3, `Medium` for P2, `High` for P1, `Critical` for P0) so the bug appears automatically in the **Bugs and Risks** view.
   - type: dropdown
     id: severity
     attributes:

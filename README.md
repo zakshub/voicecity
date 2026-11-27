@@ -56,5 +56,5 @@ Then open **http://127.0.0.1:8765** in your browser.
 
 ## Project Operating System
 
-This repository is governed by [zakshub/project-os](https://github.com/zakshub/project-os) (Private) and tracked on the [Zakshub Portfolio](https://github.com/users/zakshub/projects/2) board.  
-For AI assistant rules, local verification commands, and delivery workflow, see [AGENTS.md](./AGENTS.md).
+For public contributor guidance, local verification commands, and AI assistant rules, see [AGENTS.md](./AGENTS.md) and the repository documentation.  
+Internal maintainer governance and portfolio tracking use the owner's private `zakshub/project-os` repository and private `Zakshub Portfolio` board (owner access only).
