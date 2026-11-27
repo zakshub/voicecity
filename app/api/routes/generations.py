@@ -117,7 +117,7 @@ def create_generation(payload: GenerationCreateRequest, request: Request) -> dic
     if not analysis.normalized_text:
         raise HTTPException(status_code=400, detail="Text input cannot be empty.")
 
-    prefs = ctx.db.get_preferences()
+    prefs = ctx.db.get_preferences(default_engine=ctx.settings.tts_provider)
     requested_engine_id = payload.engine_id or str(
         prefs.get("active_engine") or ctx.settings.tts_provider
     )

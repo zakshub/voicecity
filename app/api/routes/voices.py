@@ -150,7 +150,7 @@ async def import_voice(
     status = "ready" if inspection.quality_status == "good" else "needs_review"
 
     # Optional engine-level voice preparation if an ML engine is ready
-    prefs = ctx.db.get_preferences()
+    prefs = ctx.db.get_preferences(default_engine=ctx.settings.tts_provider)
     active_engine = ctx.engines.resolve(str(prefs.get("active_engine") or ctx.settings.tts_provider))
     if active_engine.capabilities().ready:
         try:
@@ -247,7 +247,7 @@ def reprepare_voice(
     except (StorageSecurityError, AudioValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    prefs = ctx.db.get_preferences()
+    prefs = ctx.db.get_preferences(default_engine=ctx.settings.tts_provider)
     active_engine = ctx.engines.resolve(str(prefs.get("active_engine") or ctx.settings.tts_provider))
     engine_note = ""
     if active_engine.capabilities().ready:

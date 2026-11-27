@@ -46,7 +46,7 @@ class HardwareReport:
     gpus: list[GpuInfo] = field(default_factory=list)
     cuda_available: bool = False
     recommended_device: str = "cpu"
-    recommended_engine: str = "indic_parler_openvoice"
+    recommended_engine: str = "dual_cloning_router"
     warnings: list[str] = field(default_factory=list)
 
 
@@ -253,7 +253,7 @@ def probe_hardware(target_disk_path: Path | None = None) -> HardwareReport:
         gpus=gpus,
         cuda_available=cuda_available,
         recommended_device=recommended_device,
-        recommended_engine="indic_parler_openvoice",
+        recommended_engine="dual_cloning_router",
         warnings=warnings,
     )
 

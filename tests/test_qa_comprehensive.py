@@ -17,6 +17,7 @@ from app.engine.base import (
     EngineError,
     GenerationRequest,
     GenerationResult,
+    VerificationStatus,
     VoicePreparationResult,
 )
 from app.engine.registry import EngineRegistry
@@ -63,7 +64,12 @@ class _FailingEngineFixture:
             engine_id=self.engine_id,
             display_name="Failing Fixture",
             version="0.0.1",
-            distributable_default=True,
+            capability_class="reference_voice_cloning",
+            maturity_level="experimental",
+            uses_reference_audio=True,
+            requires_reference_transcript=False,
+            distributable_default=False,
+            license_category="none",
             code_license="MIT",
             weight_license="None",
             commercial_compatible=True,
@@ -72,11 +78,24 @@ class _FailingEngineFixture:
             ready=True,
             offline_supported=True,
             supported_languages=["ur", "en", "mixed"],
+            verified_native_languages=[],
+            experimental_languages=["ur", "en", "mixed"],
             device="cpu",
             estimated_download_gb=0.0,
+            min_ram_gb=1,
+            min_vram_gb=None,
+            cpu_feasible="Test fixture",
             local_weights_present=True,
             status_message="Ready to simulate runtime failure",
             source_url="https://github.com/zakshub/voicecity",
+            license_url="https://github.com/zakshub/voicecity",
+            verification=VerificationStatus(
+                automated_tests_passed=True,
+                model_integration_verified=False,
+                actual_speech_generated=False,
+                human_listening_completed=False,
+                commercial_licensing_verified=True,
+            ),
         )
 
     def prepare_voice(

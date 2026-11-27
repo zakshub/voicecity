@@ -19,7 +19,7 @@ def test_hardware_probe_returns_structured_report() -> None:
     report = probe_hardware()
     assert report.cpu_logical_cores >= 1
     assert report.disk_free_gb >= 0
-    assert report.recommended_engine == "indic_parler_openvoice"
+    assert report.recommended_engine == "dual_cloning_router"
 
 
 def test_poc_eval_has_five_multilingual_prompts() -> None:

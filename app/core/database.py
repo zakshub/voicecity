@@ -355,8 +355,10 @@ class VoiceCityDB:
 
     # --- Settings ---
 
-    def get_preferences(self) -> dict[str, Any]:
+    def get_preferences(self, default_engine: str | None = None) -> dict[str, Any]:
         prefs = dict(DEFAULT_USER_PREFERENCES)
+        if default_engine:
+            prefs["active_engine"] = default_engine
         with self._connect() as conn:
             rows = conn.execute("SELECT key, value_json FROM app_settings").fetchall()
         for row in rows:

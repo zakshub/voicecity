@@ -8,7 +8,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-DEFAULT_ENGINE_ID = "indic_parler_openvoice"
+DEFAULT_ENGINE_ID = "dual_cloning_router"
 
 
 @dataclass
