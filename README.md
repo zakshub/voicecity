@@ -51,3 +51,10 @@ Then open **http://127.0.0.1:8765** in your browser.
 - `scripts/`: `hardware_probe.py`, `poc_eval.py`, `install_linux_mint.sh`, `download_models.py`, `start_voicecity.sh`, `stop_voicecity.sh`, `voicecity.desktop.template`
 - `docs/`: [MODEL_EVALUATION.md](docs/MODEL_EVALUATION.md), [MODEL_LICENSING_REGISTER.md](docs/MODEL_LICENSING_REGISTER.md), [LINUX_MINT_GUIDE.md](docs/LINUX_MINT_GUIDE.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [ROADMAP.md](docs/ROADMAP.md), [ACCEPTANCE_CHECKLIST.md](docs/ACCEPTANCE_CHECKLIST.md), [discovery_report.md](docs/discovery_report.md)
 - `tests/`: Automated pytest suite keeping hardware-dependent live speech & listening tests explicitly `SKIPPED` (`PENDING_LAPTOP_HARDWARE`)
+
+---
+
+## Project Operating System
+
+This repository is governed by [zakshub/project-os](https://github.com/zakshub/project-os) (Private) and tracked on the [Zakshub Portfolio](https://github.com/users/zakshub/projects/2) board.  
+For AI assistant rules, local verification commands, and delivery workflow, see [AGENTS.md](./AGENTS.md).

@@ -1,0 +1,45 @@
+# Automated CI for VoiceCity (tailored from zakshub/project-os Python CI starter).
+# Runs lightweight API/unit/lint checks without installing heavy CUDA/PyTorch/ML weights.
+name: Python CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Syntax, lint, and pytest (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: "**/pyproject.toml"
+
+      - name: Install lightweight API and dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,api]"
+
+      - name: Check Python syntax
+        run: python -m compileall -q -x '(\.venv|venv|\.git|build|dist)' app tests scripts
+
+      - name: Run Ruff lint
+        run: ruff check .
+
+      - name: Run automated pytest suite
+        run: pytest -q
