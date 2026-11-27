@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Privacy & Security Guidelines
+    url: https://github.com/zakshub/voicecity/blob/main/docs/PRIVACY_SECURITY.md
+    about: Review VoiceCity's local-first privacy, consent, and anti-impersonation rules before opening an issue.
+  - name: Project Documentation & Handoff Guide
+    url: https://github.com/zakshub/voicecity/blob/main/docs/ANTIGRAVITY_HANDOFF.md
+    about: Public project guidelines, development setup, and AGENTS.md rules.
