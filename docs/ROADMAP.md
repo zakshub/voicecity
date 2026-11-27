@@ -3,19 +3,17 @@
 Dates are intentionally not assigned until hardware and model feasibility are known.
 
 ## Phase 0: Foundation and discovery
-**Status: Foundation committed; discovery pending.**
+**Status: Completed (`docs/discovery_report.md`).**
 
-Deliverables: product requirements, architecture, UX direction, privacy rules, model evaluation framework, lightweight API scaffold, hardware inventory, candidate report.
-
-Exit criteria: target laptop specs recorded; candidates compared using official sources; license and Urdu evidence documented; one model selected for proof of concept or a no-go decision recorded.
+Deliverables: product requirements, architecture, UX direction, privacy rules, model evaluation framework, lightweight API scaffold, container hardware probe, primary-source candidate report.
 
 ## Phase 1: Technical proof of concept
-- Install one approved model in an isolated environment.
-- Test the existing WAV reference recording.
-- Generate fixed Urdu, English, and mixed-language samples.
-- Measure memory, latency, stability, and output quality.
+**Status: Tooling & evaluation harness completed; live audio listening & laptop RTF/VRAM measurements pending target Linux Mint laptop.**
 
-Exit criteria: repeatable local generation, acceptable listening review, understood network behavior, hardware fit confirmed.
+- [x] Commercial-license verification separating permissive defaults (`Indic Parler-TTS` Apache-2.0 + `OpenVoice v2` MIT; optional `Kokoro-82M`/`MeloTTS`; secondary `F5-TTS-OpenBible-Urdu` CC-BY-SA-4.0) from excluded non-commercial checkpoints (Meta MMS, Coqui XTTS-v2, Fish 1.5).
+- [x] Cross-platform hardware discovery script (`scripts/hardware_probe.py`) with Android/PRoot safety guard.
+- [x] Repeatable 5-prompt PoC evaluation harness (`scripts/poc_eval.py`) and isolated Linux Mint setup script (`scripts/setup_poc_env.sh`).
+- [ ] Run isolated PoC on target Linux Mint laptop with user's ~2-minute WAV and record listening scores, RAM/VRAM, and RTF.
 
 ## Phase 2: Core application
 - Voice library and local profile lifecycle.
