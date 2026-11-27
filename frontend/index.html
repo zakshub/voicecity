@@ -152,6 +152,15 @@
 
           <div class="panel">
             <div class="panel-header">
+              <h2>Capability &amp; Language Matrix</h2>
+              <span class="badge badge-neutral">Separated Capabilities</span>
+            </div>
+            <p class="field-help" style="margin-top:-8px;margin-bottom:12px;">VoiceCity separates Standard TTS from Reference-Audio Voice Cloning and Experimental Voice Conversion so unsupported languages are never disguised.</p>
+            <div id="dash-capability-matrix" class="kv-list"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
               <h2>Recent Generations</h2>
               <button type="button" class="btn-link" data-goto="history">View history</button>
             </div>
@@ -299,27 +308,43 @@
 
               <div id="studio-error" class="callout callout-error" role="alert" hidden></div>
 
+              <div id="studio-job-progress" class="job-progress-box" hidden>
+                <div class="label-row">
+                  <strong id="studio-job-stage">Queued…</strong>
+                  <button type="button" class="btn btn-danger btn-sm" id="btn-cancel-job">Cancel</button>
+                </div>
+                <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="studio-progress-bar">
+                  <div class="progress-fill" id="studio-progress-fill" style="width:0%"></div>
+                </div>
+              </div>
+
               <div class="action-row">
-                <button type="submit" class="btn btn-primary" id="btn-generate-speech">Generate Speech</button>
+                <button type="submit" class="btn btn-primary" id="btn-generate-speech">Queue Speech Generation</button>
                 <button type="button" class="btn btn-secondary" id="btn-analyze-text">Inspect Language Segments</button>
               </div>
             </form>
 
             <aside class="panel">
               <div class="panel-header">
-                <h2>Script &amp; Engine Readiness</h2>
+                <h2>Script, Hints &amp; Active Engine</h2>
               </div>
               <div class="subpanel">
                 <h3>Detected Language Segments</h3>
-                <p class="field-help">In Mixed mode, VoiceCity detects Urdu and English spans deterministically so each language uses appropriate phonetics.</p>
+                <p class="field-help">In Mixed mode, VoiceCity detects Urdu and English spans deterministically and flags abbreviations or script mismatches.</p>
                 <div id="studio-segments-preview" class="segments-list">
                   <span class="meta-text">Type text and click "Inspect Language Segments" to preview routing.</span>
                 </div>
+                <div id="studio-pronunciation-hints" class="stack-list" style="margin-top:8px;"></div>
               </div>
 
               <div class="subpanel">
                 <h3>Active Speech Engine</h3>
                 <div id="studio-engine-details" class="kv-list"></div>
+              </div>
+
+              <div class="subpanel">
+                <h3>Recent Queue Jobs</h3>
+                <div id="studio-jobs-list" class="compact-list"></div>
               </div>
             </aside>
           </div>
@@ -444,8 +469,10 @@
 
           <div class="panel">
             <div class="panel-header">
-              <h2>Available Engines &amp; License Audit</h2>
+              <h2>Available Engines, Capabilities &amp; 5-Axis Verification</h2>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-verify-models">Verify Local Model Cache</button>
             </div>
+            <div id="settings-model-verify-result" style="margin-bottom:14px;" hidden></div>
             <div id="settings-engines-list" class="stack-list"></div>
           </div>
 

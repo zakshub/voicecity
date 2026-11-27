@@ -39,12 +39,15 @@ def test_frontend_served_from_root_and_assets(tmp_path: Path) -> None:
     ):
         assert f'id="{view_id}"' in html
 
-    # Key WCAG 2.2 accessibility & RTL markers present
+    # Key WCAG 2.2 accessibility, RTL, queue, and separated capability markers present
     assert 'class="skip-link"' in html
     assert 'aria-live="polite"' in html
     assert 'for="ownership-checkbox"' in html
     assert 'for="studio-text-input"' in html
     assert 'dir="auto"' in html
+    assert 'id="dash-capability-matrix"' in html
+    assert 'id="btn-cancel-job"' in html
+    assert 'id="btn-verify-models"' in html
 
     css_res = client.get("/assets/styles.css")
     assert css_res.status_code == 200
@@ -53,3 +56,5 @@ def test_frontend_served_from_root_and_assets(tmp_path: Path) -> None:
     js_res = client.get("/assets/app.js")
     assert js_res.status_code == 200
     assert "/api/v1/voices/import" in js_res.text
+    assert "/api/v1/jobs" in js_res.text
+    assert "/api/v1/models/verify" in js_res.text

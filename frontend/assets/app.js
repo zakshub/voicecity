@@ -1,5 +1,7 @@
 /* VoiceCity Local Web Studio Frontend
  * Pure ES2022 client communicating strictly with local loopback FastAPI endpoints.
+ * Separates Standard TTS, Reference-Audio Voice Cloning, Voice Conversion, and
+ * Experimental Cross-Linguistic Conversion honestly across all views.
  */
 
 const state = {
@@ -9,7 +11,10 @@ const state = {
   settings: null,
   voices: [],
   generations: [],
+  jobs: [],
   activePreviewId: null,
+  activeJobId: null,
+  jobPollTimer: null,
 };
 
 const VIEW_META = {
@@ -19,19 +24,19 @@ const VIEW_META = {
   },
   voices: {
     title: "Voice Library",
-    subtitle: "Inspect original WAV recordings, auto-prepared reference clips, and profile settings.",
+    subtitle: "Inspect original WAV recordings, edit reference transcripts, and re-extract clean segments.",
   },
   "create-voice": {
     title: "Create Voice Profile",
-    subtitle: "Import your personal WAV recording once; VoiceCity automatically prepares a clean reference clip.",
+    subtitle: "Import your personal WAV recording once; VoiceCity preserves the original and prepares a clean clip.",
   },
   studio: {
     title: "Text to Speech Studio",
-    subtitle: "Generate Urdu, English, and mixed Urdu-English speech using your local voice profile.",
+    subtitle: "Queue Urdu, English, or mixed speech synthesis with live progress, cancellation, and capability honesty.",
   },
   preview: {
     title: "Audio Preview",
-    subtitle: "Listen to generated clips, compare attempts, and export locally as WAV or MP3.",
+    subtitle: "Listen to generated clips, compare attempts side by side, and export locally as WAV or MP3.",
   },
   history: {
     title: "Generation History",
@@ -39,7 +44,7 @@ const VIEW_META = {
   },
   settings: {
     title: "Settings",
-    subtitle: "Manage speech engine selection, licenses, storage paths, compute device, and host diagnostics.",
+    subtitle: "Manage engines, separated capability classes, licenses, 5-axis verification, and host diagnostics.",
   },
 };
 
@@ -47,6 +52,35 @@ const SAMPLES = {
   ur: "السلام علیکم، وائس سٹی میں خوش آمدید۔ یہ میری اپنی آواز کا پہلا مقامی تجربہ ہے۔",
   en: "Welcome to VoiceCity. This is a local-first personal voice studio running privately on Linux.",
   mixed: "آج شام کو ہم اپنی نئی application کا launch review کریں گے، براہ کرم وقت پر جوائن کریں۔",
+};
+
+const CAP_LABELS = {
+  standard_tts: "Standard TTS (Not Cloning)",
+  reference_voice_cloning: "Reference-Audio Voice Cloning",
+  voice_conversion: "Voice Conversion (Audio-to-Audio)",
+  cross_linguistic_voice_conversion: "Cross-Linguistic Conversion",
+};
+
+const MATURITY_LABELS = {
+  experimental: "Experimental",
+  technically_integrated: "Technically Integrated",
+  empirically_verified: "Empirically Verified",
+};
+
+const LICENSE_LABELS = {
+  permissive_commercial: "Permissive Commercial",
+  share_alike_optional: "Optional ShareAlike (CC-BY-SA)",
+  non_commercial_restricted: "Non-Commercial Restricted",
+  none: "No Weights",
+};
+
+const STATUS_LABELS = {
+  empirically_verified: ["Empirically Verified", "badge-ok"],
+  ready_unverified_listening: ["Ready (Listening Unverified)", "badge-ok"],
+  ready_experimental: ["Ready (Experimental)", "badge-warn"],
+  experimental_not_installed: ["Experimental · Not Installed", "badge-warn"],
+  not_installed: ["Not Installed", "badge-neutral"],
+  unsupported: ["Unsupported", "badge-error"],
 };
 
 function esc(value) {
@@ -75,6 +109,11 @@ function fmtDate(iso) {
   } catch {
     return iso;
   }
+}
+
+function statusBadgeHtml(code) {
+  const [label, cls] = STATUS_LABELS[code] || [code, "badge-neutral"];
+  return `<span class="badge ${cls}">${esc(label)}</span>`;
 }
 
 let toastTimer = null;
@@ -140,18 +179,20 @@ function switchView(viewId) {
 
 async function loadAllData() {
   try {
-    const [caps, diag, settings, voicesRes, gensRes] = await Promise.all([
+    const [caps, diag, settings, voicesRes, gensRes, jobsRes] = await Promise.all([
       apiJson("/api/v1/capabilities"),
       apiJson("/api/v1/diagnostics"),
       apiJson("/api/v1/settings"),
       apiJson("/api/v1/voices"),
       apiJson("/api/v1/generations"),
+      apiJson("/api/v1/jobs"),
     ]);
     state.capabilities = caps;
     state.diagnostics = diag;
     state.settings = settings;
     state.voices = voicesRes.voices || [];
     state.generations = gensRes.generations || [];
+    state.jobs = jobsRes.jobs || [];
 
     if (!state.activePreviewId && state.generations.length > 0) {
       const firstCompleted = state.generations.find((g) => g.has_audio);
@@ -180,7 +221,9 @@ function renderSidebarStatus() {
   const dot = document.getElementById("sidebar-engine-dot");
   const label = document.getElementById("sidebar-engine-label");
   dot.className = `status-dot ${eng.ready ? "status-ok" : "status-warn"}`;
-  label.textContent = eng.ready ? `Engine Ready · ${eng.engine_id}` : `Engine Pending Setup`;
+  label.textContent = eng.ready
+    ? `${eng.engine_id} (${MATURITY_LABELS[eng.maturity_level] || eng.maturity_level})`
+    : `Engine Not Installed`;
 
   const procBadge = document.getElementById("topbar-processing-badge");
   procBadge.textContent = caps.remote_inference ? "Remote Inference Enabled" : "Processing: On Device";
@@ -197,7 +240,7 @@ function renderDashboard() {
     const eng = caps.active_engine;
     document.getElementById("dash-engine-name").textContent = eng.display_name;
     document.getElementById("dash-engine-state").textContent = eng.ready
-      ? `Ready (${eng.supported_languages.join(", ")})`
+      ? `${CAP_LABELS[eng.capability_class] || eng.capability_class} · ${MATURITY_LABELS[eng.maturity_level] || eng.maturity_level}`
       : "Not installed yet (honest status)";
 
     const banner = document.getElementById("dashboard-engine-banner");
@@ -205,9 +248,49 @@ function renderDashboard() {
       banner.hidden = false;
       banner.innerHTML = `<strong>Local Speech Engine Not Yet Installed:</strong> ${esc(
         eng.status_message
-      )} You can already import your WAV recording, inspect audio quality, and prepare your voice profile.`;
+      )} You can already import your WAV recording, inspect audio quality, add your reference transcript, and prepare your voice profile.`;
+    } else if (eng.maturity_level === "experimental") {
+      banner.hidden = false;
+      banner.innerHTML = `<strong>Experimental Pipeline Active:</strong> ${esc(eng.status_message)}`;
     } else {
       banner.hidden = true;
+    }
+
+    const byType = caps.capabilities_by_type || {};
+    const matrixEl = document.getElementById("dash-capability-matrix");
+    if (matrixEl && byType.reference_voice_cloning) {
+      matrixEl.innerHTML = `
+        <div class="kv-item">
+          <span class="kv-label">Urdu Reference Voice Cloning</span>
+          <span class="kv-val">${statusBadgeHtml(byType.reference_voice_cloning.urdu)}</span>
+          <span class="meta-text">F5-TTS OpenBible Urdu (CC-BY-SA-4.0 optional)</span>
+        </div>
+        <div class="kv-item">
+          <span class="kv-label">English Reference Voice Cloning</span>
+          <span class="kv-val">${statusBadgeHtml(byType.reference_voice_cloning.english)}</span>
+          <span class="meta-text">Qwen3-TTS 0.6B-Base (Apache-2.0)</span>
+        </div>
+        <div class="kv-item">
+          <span class="kv-label">Mixed Urdu-English Cloning</span>
+          <span class="kv-val">${statusBadgeHtml(byType.reference_voice_cloning.mixed)}</span>
+          <span class="meta-text">Dual Router (requires both Urdu + English engines)</span>
+        </div>
+        <div class="kv-item">
+          <span class="kv-label">Standard TTS (NOT Voice Cloning)</span>
+          <span class="kv-val">${statusBadgeHtml(byType.standard_tts?.urdu || "not_installed")}</span>
+          <span class="meta-text">Indic Parler-TTS (Apache-2.0 · synthetic voice only)</span>
+        </div>
+        <div class="kv-item">
+          <span class="kv-label">Voice Conversion (Audio-to-Audio)</span>
+          <span class="kv-val">${statusBadgeHtml(byType.voice_conversion?.english || "not_installed")}</span>
+          <span class="meta-text">OpenVoice v2 (MIT · Urdu NOT native)</span>
+        </div>
+        <div class="kv-item">
+          <span class="kv-label">Cross-Linguistic Conversion (Urdu)</span>
+          <span class="kv-val">${statusBadgeHtml(byType.cross_linguistic_voice_conversion?.urdu_experimental || "experimental_not_installed")}</span>
+          <span class="meta-text">Experimental: Indic Parler -&gt; OpenVoice v2</span>
+        </div>
+      `;
     }
   }
 
@@ -318,6 +401,17 @@ function renderVoices() {
             <audio controls preload="none" src="${esc(v.source_audio_url)}"></audio>
           </div>
         </div>
+
+        <div class="inline-editor">
+          <div>
+            <label for="transcript-${esc(v.id)}">Reference Clip Transcript (Required for offline F5-TTS Urdu)</label>
+            <input id="transcript-${esc(v.id)}" type="text" dir="auto" value="${esc(v.reference_transcript || "")}" placeholder="Enter exact words spoken in the prepared 6-10s reference clip…" />
+          </div>
+          <div class="action-row-inline">
+            <button type="button" class="btn btn-secondary btn-sm" data-save-transcript="${esc(v.id)}">Save Transcript</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-reprepare-voice="${esc(v.id)}">Re-Slice 8s Clip</button>
+          </div>
+        </div>
       </article>`;
     })
     .join("");
@@ -348,7 +442,7 @@ function renderInspectionResult(voice) {
     </div>
     <div class="action-row">
       <button type="button" class="btn btn-primary" data-use-voice="${esc(voice.id)}">Open in Speech Studio</button>
-      <button type="button" class="btn btn-secondary" data-goto="voices">View Voice Library</button>
+      <button type="button" class="btn btn-secondary" data-goto="voices">Add Reference Transcript in Library</button>
     </div>`;
 }
 
@@ -359,7 +453,12 @@ function renderStudioMeta() {
     voiceSelect.innerHTML = `<option value="">No voice profiles — create one first</option>`;
   } else {
     voiceSelect.innerHTML = state.voices
-      .map((v) => `<option value="${esc(v.id)}">${esc(v.display_name)} (${fmtSeconds(v.reference_duration_seconds)} ref)</option>`)
+      .map(
+        (v) =>
+          `<option value="${esc(v.id)}">${esc(v.display_name)} (${fmtSeconds(v.reference_duration_seconds)} ref${
+            v.reference_transcript ? " · transcript set" : ""
+          })</option>`
+      )
       .join("");
     if (prevVal && state.voices.some((v) => v.id === prevVal)) {
       voiceSelect.value = prevVal;
@@ -370,25 +469,55 @@ function renderStudioMeta() {
   if (!caps) return;
   const eng = caps.active_engine;
   const alertEl = document.getElementById("studio-engine-alert");
-  const genBtn = document.getElementById("btn-generate-speech");
 
   if (!eng.ready) {
     alertEl.hidden = false;
-    alertEl.innerHTML = `<strong>Speech generation is unavailable until model weights are installed locally:</strong> ${esc(
+    alertEl.innerHTML = `<strong>Active Engine Not Installed (${esc(CAP_LABELS[eng.capability_class] || eng.capability_class)}):</strong> ${esc(
       eng.status_message
     )}`;
-    genBtn.disabled = false; // Allow click to show exact structured explanation if desired
+  } else if (eng.capability_class === "standard_tts") {
+    alertEl.hidden = false;
+    alertEl.innerHTML = `<strong>Notice — Standard TTS Only (NOT Voice Cloning):</strong> ${esc(
+      eng.display_name
+    )} ignores your uploaded WAV recording and uses a synthetic speaker. Switch to a Reference-Audio Voice Cloning engine in Settings for personal voice cloning.`;
+  } else if (eng.maturity_level === "experimental") {
+    alertEl.hidden = false;
+    alertEl.innerHTML = `<strong>Experimental Mode:</strong> ${esc(eng.status_message)}`;
   } else {
     alertEl.hidden = true;
-    genBtn.disabled = false;
   }
 
   document.getElementById("studio-engine-details").innerHTML = `
     <div class="kv-item"><span class="kv-label">Engine</span><span class="kv-val">${esc(eng.display_name)}</span></div>
-    <div class="kv-item"><span class="kv-label">Status</span><span class="kv-val">${eng.ready ? "Ready" : "Not Installed"}</span></div>
-    <div class="kv-item"><span class="kv-label">Languages</span><span class="kv-val">${esc((eng.supported_languages || []).join(", ") || "None")}</span></div>
-    <div class="kv-item"><span class="kv-label">License</span><span class="kv-val">${esc(eng.weight_license)}</span></div>
+    <div class="kv-item"><span class="kv-label">Capability Class</span><span class="kv-val">${esc(CAP_LABELS[eng.capability_class] || eng.capability_class)}</span></div>
+    <div class="kv-item"><span class="kv-label">Maturity</span><span class="kv-val">${esc(MATURITY_LABELS[eng.maturity_level] || eng.maturity_level)}</span></div>
+    <div class="kv-item"><span class="kv-label">Uses Ref Audio</span><span class="kv-val">${eng.uses_reference_audio ? "Yes" : "No (Synthetic TTS)"}</span></div>
+    <div class="kv-item"><span class="kv-label">Urdu / English / Mixed</span><span class="kv-val">${esc(caps.urdu)} / ${esc(caps.english)} / ${esc(caps.mixed_language)}</span></div>
+    <div class="kv-item"><span class="kv-label">Weight License</span><span class="kv-val">${esc(eng.weight_license)}</span></div>
   `;
+
+  const jobsEl = document.getElementById("studio-jobs-list");
+  if (jobsEl) {
+    if (!state.jobs.length) {
+      jobsEl.innerHTML = `<span class="meta-text">No queued generation jobs yet.</span>`;
+    } else {
+      jobsEl.innerHTML = state.jobs
+        .slice(0, 5)
+        .map(
+          (j) => `
+        <div class="compact-row">
+          <div>
+            <strong>${esc(j.language.toUpperCase())}</strong> · <span class="meta-text">${esc(j.stage_message)}</span>
+            <div class="meta-text">${esc(j.text_preview)}</div>
+          </div>
+          <span class="badge ${
+            j.status === "completed" ? "badge-ok" : j.status === "failed" ? "badge-error" : "badge-warn"
+          }">${esc(j.status)} (${j.progress_percent}%)</span>
+        </div>`
+        )
+        .join("");
+    }
+  }
 }
 
 function renderPreview() {
@@ -539,28 +668,51 @@ function renderSettings() {
   `;
 
   document.getElementById("settings-engines-list").innerHTML = (s.available_engines || [])
-    .map(
-      (e) => `
+    .map((e) => {
+      const v = e.verification || {};
+      const caveatsHtml =
+        e.caveats && e.caveats.length
+          ? `<ul class="warning-list">${e.caveats.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>`
+          : "";
+      return `
     <article class="item-card">
       <div class="item-card-head">
         <div>
           <h3 class="item-card-title">${esc(e.display_name)}</h3>
-          <div class="meta-text">Engine ID: <span class="code-inline">${esc(e.engine_id)}</span> · Est. Download: ${e.estimated_download_gb} GB</div>
+          <div class="meta-text">ID: <span class="code-inline">${esc(e.engine_id)}</span> · Est. Download: ${e.estimated_download_gb} GB · RAM &ge;${e.min_ram_gb} GB${
+        e.min_vram_gb ? ` · VRAM &ge;${e.min_vram_gb} GB` : ""
+      }</div>
         </div>
         <div class="action-row-inline">
-          ${e.distributable_default ? '<span class="badge badge-ok">Commercial Default</span>' : ""}
+          <span class="badge ${e.capability_class === "reference_voice_cloning" ? "badge-ok" : "badge-neutral"}">${esc(
+        CAP_LABELS[e.capability_class] || e.capability_class
+      )}</span>
+          <span class="badge ${e.maturity_level === "experimental" ? "badge-warn" : "badge-neutral"}">${esc(
+        MATURITY_LABELS[e.maturity_level] || e.maturity_level
+      )}</span>
+          <span class="badge ${e.license_category === "permissive_commercial" ? "badge-ok" : "badge-warn"}">${esc(
+        LICENSE_LABELS[e.license_category] || e.license_category
+      )}</span>
           <span class="badge ${e.ready ? "badge-ok" : "badge-warn"}">${e.ready ? "Ready" : "Not Installed"}</span>
         </div>
       </div>
       <div class="kv-list">
         <div class="kv-item"><span class="kv-label">Code License</span><span class="kv-val">${esc(e.code_license)}</span></div>
         <div class="kv-item"><span class="kv-label">Weight License</span><span class="kv-val">${esc(e.weight_license)}</span></div>
-        <div class="kv-item"><span class="kv-label">Commercial Status</span><span class="kv-val">${esc(e.commercial_note)}</span></div>
-        <div class="kv-item"><span class="kv-label">Languages</span><span class="kv-val">${esc((e.supported_languages || []).join(", ") || "None")}</span></div>
+        <div class="kv-item"><span class="kv-label">Native / Experimental Langs</span><span class="kv-val">Native: ${esc((e.verified_native_languages || []).join(", ") || "None")} | Exp: ${esc((e.experimental_languages || []).join(", ") || "None")}</span></div>
+        <div class="kv-item"><span class="kv-label">CPU Feasibility</span><span class="kv-val">${esc(e.cpu_feasible)}</span></div>
       </div>
+      <div class="verify-grid" aria-label="Five-axis verification status">
+        <span class="badge ${v.automated_tests_passed ? "badge-ok" : "badge-neutral"}">Automated Tests: ${v.automated_tests_passed ? "Passed" : "Pending"}</span>
+        <span class="badge ${v.model_integration_verified ? "badge-ok" : "badge-neutral"}">Model Load Verified: ${v.model_integration_verified ? "Yes" : "Pending"}</span>
+        <span class="badge ${v.actual_speech_generated ? "badge-ok" : "badge-neutral"}">Actual Speech Generated: ${v.actual_speech_generated ? "Yes" : "No"}</span>
+        <span class="badge ${v.human_listening_completed ? "badge-ok" : "badge-neutral"}">Human Listening: ${v.human_listening_completed ? "Done" : "Pending"}</span>
+        <span class="badge ${v.commercial_licensing_verified ? "badge-ok" : "badge-warn"}">License Checked: ${v.commercial_licensing_verified ? "Yes" : "Pending"}</span>
+      </div>
+      ${caveatsHtml}
       <p class="field-help" style="margin-top:10px;">${esc(e.status_message)}</p>
-    </article>`
-    )
+    </article>`;
+    })
     .join("");
 
   if (diag?.hardware) {
@@ -581,6 +733,65 @@ function renderSettings() {
     document.getElementById("settings-hardware-warnings").innerHTML = (hw.warnings || [])
       .map((w) => `<div class="callout callout-warn" style="margin-top:10px;margin-bottom:0;">${esc(w)}</div>`)
       .join("");
+  }
+}
+
+async function pollJob(jobId) {
+  const box = document.getElementById("studio-job-progress");
+  const stageEl = document.getElementById("studio-job-stage");
+  const fillEl = document.getElementById("studio-progress-fill");
+  const barEl = document.getElementById("studio-progress-bar");
+  const errEl = document.getElementById("studio-error");
+
+  try {
+    const res = await apiJson(`/api/v1/jobs/${encodeURIComponent(jobId)}`);
+    const job = res.job;
+    box.hidden = false;
+    stageEl.textContent = `${job.stage_message} (${job.progress_percent}%)`;
+    fillEl.style.width = `${job.progress_percent}%`;
+    barEl.setAttribute("aria-valuenow", String(job.progress_percent));
+
+    if (job.status === "completed") {
+      stopJobPolling();
+      box.hidden = true;
+      state.activePreviewId = job.generation_id;
+      showToast("Speech generated locally.");
+      await loadAllData();
+      switchView("preview");
+      return;
+    }
+    if (job.status === "cancelled") {
+      stopJobPolling();
+      box.hidden = true;
+      showToast("Generation cancelled.");
+      await loadAllData();
+      return;
+    }
+    if (job.status === "failed") {
+      stopJobPolling();
+      box.hidden = true;
+      errEl.textContent = job.error_message || "Generation failed.";
+      errEl.hidden = false;
+      await loadAllData();
+    }
+  } catch (err) {
+    stopJobPolling();
+    box.hidden = true;
+    errEl.textContent = err.message;
+    errEl.hidden = false;
+  }
+}
+
+function stopJobPolling() {
+  if (state.jobPollTimer) {
+    clearInterval(state.jobPollTimer);
+    state.jobPollTimer = null;
+  }
+  state.activeJobId = null;
+  const btn = document.getElementById("btn-generate-speech");
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = "Queue Speech Generation";
   }
 }
 
@@ -620,6 +831,45 @@ function bindEvents() {
         document.getElementById("studio-language-select").value = rec.language;
         document.getElementById("studio-text-input").value = rec.text;
         updateStudioTextStyles();
+      }
+      return;
+    }
+
+    const saveTranscriptBtn = ev.target.closest("[data-save-transcript]");
+    if (saveTranscriptBtn) {
+      const vid = saveTranscriptBtn.dataset.saveTranscript;
+      const input = document.getElementById(`transcript-${vid}`);
+      try {
+        await apiJson(`/api/v1/voices/${encodeURIComponent(vid)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference_transcript: (input?.value || "").trim() }),
+        });
+        showToast("Reference transcript saved locally.");
+        await loadAllData();
+      } catch (err) {
+        showToast(err.message);
+      }
+      return;
+    }
+
+    const reprepareBtn = ev.target.closest("[data-reprepare-voice]");
+    if (reprepareBtn) {
+      const vid = reprepareBtn.dataset.reprepareVoice;
+      const input = document.getElementById(`transcript-${vid}`);
+      try {
+        await apiJson(`/api/v1/voices/${encodeURIComponent(vid)}/prepare`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            target_duration_seconds: 8.0,
+            reference_transcript: (input?.value || "").trim(),
+          }),
+        });
+        showToast("Reference clip re-extracted from untouched source WAV.");
+        await loadAllData();
+      } catch (err) {
+        showToast(err.message);
       }
       return;
     }
@@ -689,6 +939,46 @@ function bindEvents() {
   document.getElementById("btn-refresh-all").addEventListener("click", async () => {
     await loadAllData();
     showToast("Local status refreshed.");
+  });
+
+  document.getElementById("btn-verify-models").addEventListener("click", async () => {
+    const out = document.getElementById("settings-model-verify-result");
+    try {
+      const res = await apiJson("/api/v1/models/verify");
+      out.hidden = false;
+      const rows = Object.entries(res.models || {})
+        .map(
+          ([k, v]) => `
+        <div class="compact-row">
+          <div>
+            <strong class="code-inline">${esc(k)}</strong>
+            <div class="meta-text">${
+              v.complete
+                ? `Cached files verified (${v.present_files.length})`
+                : `Missing: ${esc((v.missing_files || []).join(", "))}`
+            }</div>
+          </div>
+          <span class="badge ${v.complete ? "badge-ok" : "badge-warn"}">${v.complete ? "Cached" : "Incomplete"}</span>
+        </div>`
+        )
+        .join("");
+      out.innerHTML = `<div class="compact-list">${rows}</div>`;
+    } catch (err) {
+      out.hidden = false;
+      out.innerHTML = `<div class="callout callout-error">${esc(err.message)}</div>`;
+    }
+  });
+
+  document.getElementById("btn-cancel-job").addEventListener("click", async () => {
+    if (!state.activeJobId) return;
+    try {
+      await apiJson(`/api/v1/jobs/${encodeURIComponent(state.activeJobId)}/cancel`, {
+        method: "POST",
+      });
+      showToast("Cancellation requested.");
+    } catch (err) {
+      showToast(err.message);
+    }
   });
 
   document.getElementById("voice-search-input").addEventListener("input", renderVoices);
@@ -796,9 +1086,9 @@ function bindEvents() {
 
     const genBtn = document.getElementById("btn-generate-speech");
     genBtn.disabled = true;
-    genBtn.textContent = "Generating Locally…";
+    genBtn.textContent = "Queued…";
     try {
-      const res = await apiJson("/api/v1/generations", {
+      const res = await apiJson("/api/v1/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -809,16 +1099,15 @@ function bindEvents() {
           expression: document.getElementById("studio-expression-select").value,
         }),
       });
-      state.activePreviewId = res.generation.id;
-      showToast("Speech generated locally.");
-      await loadAllData();
-      switchView("preview");
+      state.activeJobId = res.job.job_id;
+      await pollJob(state.activeJobId);
+      if (state.activeJobId) {
+        state.jobPollTimer = setInterval(() => pollJob(state.activeJobId), 500);
+      }
     } catch (err) {
       errEl.textContent = err.message;
       errEl.hidden = false;
-    } finally {
-      genBtn.disabled = false;
-      genBtn.textContent = "Generate Speech";
+      stopJobPolling();
     }
   });
 
@@ -861,8 +1150,10 @@ async function analyzeStudioText() {
   const text = document.getElementById("studio-text-input").value.trim();
   const lang = document.getElementById("studio-language-select").value;
   const out = document.getElementById("studio-segments-preview");
+  const hintsEl = document.getElementById("studio-pronunciation-hints");
   if (!text) {
     out.innerHTML = `<span class="meta-text">Enter text to inspect Urdu/English segmentation.</span>`;
+    if (hintsEl) hintsEl.innerHTML = "";
     return;
   }
   try {
@@ -880,6 +1171,11 @@ async function analyzeStudioText() {
       </div>`
       )
       .join("");
+    if (hintsEl) {
+      hintsEl.innerHTML = (res.pronunciation_hints || [])
+        .map((h) => `<div class="callout callout-warn" style="margin-bottom:0;">${esc(h)}</div>`)
+        .join("");
+    }
   } catch (err) {
     out.innerHTML = `<div class="callout callout-error">${esc(err.message)}</div>`;
   }
