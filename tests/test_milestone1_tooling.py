@@ -36,15 +36,15 @@ def test_poc_eval_dry_run_is_honest_about_untested_listening(tmp_path: Path) -> 
     assert wav_info["suitable_duration"] is True
 
     result = run_evaluation(
-        engine_id="indic_parler_openvoice",
+        engine_id="f5_tts_urdu",
         reference_wav=wav_path,
         output_dir=tmp_path / "eval_out",
         dry_run=True,
         allow_mobile_override=False,
     )
-    assert result["engine_id"] == "indic_parler_openvoice"
-    assert (tmp_path / "eval_out" / "poc_eval_indic_parler_openvoice.json").is_file()
+    assert result["engine_id"] == "f5_tts_urdu"
+    assert (tmp_path / "eval_out" / "poc_eval_f5_tts_urdu.json").is_file()
     listening = result["listening_review"]
     assert isinstance(listening, dict)
-    for scores in listening.values():
-        assert scores["intelligibility_1_to_5"] == "UNTESTED"
+    assert listening["ur_formal"]["intelligibility_1_to_5"] == "UNTESTED"
+    assert listening["en_baseline"]["intelligibility_1_to_5"] == "UNSUPPORTED_BY_ENGINE"

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from app.core.config import Settings
 from app.core.database import VoiceCityDB
+from app.core.jobs import GenerationJobQueue
 from app.core.storage import LocalStorage
 from app.engine.registry import EngineRegistry
 
@@ -16,3 +17,4 @@ class AppContext:
     storage: LocalStorage
     db: VoiceCityDB
     engines: EngineRegistry
+    jobs: GenerationJobQueue

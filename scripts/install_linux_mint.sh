@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # VoiceCity Linux Mint Installer
-# Usage:
-#   bash scripts/install_linux_mint.sh
-#   bash scripts/install_linux_mint.sh --with-engine indic_parler_openvoice --device auto
-#   bash scripts/install_linux_mint.sh --with-engine f5_tts_urdu --device cpu
+# Supported --with-engine values:
+#   dual_cloning                (F5-TTS Urdu [CC-BY-SA-4.0] + Qwen3-TTS English [Apache-2.0])
+#   f5_tts_urdu                 (Urdu reference voice cloning ONLY — CC-BY-SA-4.0 optional)
+#   qwen3_tts_en                (English reference voice cloning ONLY — Apache-2.0)
+#   indic_parler_tts            (Standard Urdu/English TTS ONLY — NOT voice cloning, Apache-2.0)
+#   openvoice_v2_converter      (Audio-to-audio voice conversion ONLY — MIT, Urdu not native)
+#   experimental_parler_openvoice (EXPERIMENTAL cross-linguistic conversion)
 
 set -euo pipefail
 
@@ -21,7 +24,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -h|--help)
-      echo "Usage: bash scripts/install_linux_mint.sh [--with-engine indic_parler_openvoice|f5_tts_urdu] [--device auto|cpu|cuda]"
+      echo "Usage: bash scripts/install_linux_mint.sh [--with-engine dual_cloning|f5_tts_urdu|qwen3_tts_en|indic_parler_tts|openvoice_v2_converter|experimental_parler_openvoice] [--device auto|cpu|cuda]"
       exit 0
       ;;
     *)
@@ -51,7 +54,7 @@ for candidate in python3.12 python3.11 python3; do
 done
 
 if [[ -z "$PYTHON_BIN" ]]; then
-  echo "ERROR: Python 3.11+ is required. On Linux Mint run: sudo apt update && sudo apt install -y python3 python3-venv python3-pip" >&2
+  echo "ERROR: Python 3.11+ is required. Run: sudo apt update && sudo apt install -y python3 python3-venv python3-pip" >&2
   exit 1
 fi
 
@@ -72,6 +75,25 @@ if ! command -v ffmpeg >/dev/null 2>&1; then
   echo "  sudo apt update && sudo apt install -y ffmpeg"
 fi
 
+install_f5_urdu() {
+  python -m pip install "huggingface_hub>=0.25" "omegaconf>=2.3" "hydra-core>=1.3" "soundfile>=0.12"
+  python -m pip install "git+https://github.com/SWivid/F5-TTS.git"
+}
+
+install_qwen3_en() {
+  python -m pip install "huggingface_hub>=0.25" "soundfile>=0.12" "qwen-tts"
+}
+
+install_indic_parler() {
+  python -m pip install "transformers>=4.46" "accelerate>=0.34" "soundfile>=0.12" "huggingface_hub>=0.25"
+  python -m pip install "git+https://github.com/huggingface/parler-tts.git"
+}
+
+install_openvoice() {
+  python -m pip install "huggingface_hub>=0.25" "soundfile>=0.12"
+  python -m pip install --no-deps "git+https://github.com/myshell-ai/OpenVoice.git"
+}
+
 if [[ -n "$WITH_ENGINE" ]]; then
   if [[ "$DEVICE" == "auto" ]]; then
     if command -v nvidia-smi >/dev/null 2>&1; then
@@ -89,17 +111,28 @@ if [[ -n "$WITH_ENGINE" ]]; then
   fi
 
   case "$WITH_ENGINE" in
-    indic_parler_openvoice)
-      python -m pip install "transformers>=4.46" "accelerate>=0.34" "soundfile>=0.12" "huggingface_hub>=0.25"
-      python -m pip install "git+https://github.com/huggingface/parler-tts.git"
-      python -m pip install --no-deps "git+https://github.com/myshell-ai/OpenVoice.git"
+    dual_cloning)
+      install_f5_urdu
+      install_qwen3_en
       ;;
     f5_tts_urdu)
-      python -m pip install "huggingface_hub>=0.25" "omegaconf>=2.3" "hydra-core>=1.3" "soundfile>=0.12"
-      python -m pip install "git+https://github.com/SWivid/F5-TTS.git"
+      install_f5_urdu
+      ;;
+    qwen3_tts_en)
+      install_qwen3_en
+      ;;
+    indic_parler_tts)
+      install_indic_parler
+      ;;
+    openvoice_v2_converter)
+      install_openvoice
+      ;;
+    experimental_parler_openvoice)
+      install_indic_parler
+      install_openvoice
       ;;
     *)
-      echo "ERROR: Unsupported engine '$WITH_ENGINE'. Choose indic_parler_openvoice or f5_tts_urdu." >&2
+      echo "ERROR: Unsupported engine '$WITH_ENGINE'." >&2
       exit 1
       ;;
   esac
@@ -107,12 +140,15 @@ fi
 
 echo ""
 echo "VoiceCity installation complete."
-echo "Next steps:"
 if [[ -n "$WITH_ENGINE" ]]; then
-  echo "  1. Download local weights: .venv/bin/python scripts/download_models.py --engine $WITH_ENGINE"
-  echo "  2. Launch VoiceCity:       bash scripts/start_voicecity.sh"
+  echo "Next steps:"
+  if [[ "$WITH_ENGINE" == "experimental_parler_openvoice" ]]; then
+    echo "  1. Download weights: .venv/bin/python scripts/download_models.py --engine indic_parler_tts"
+    echo "                       .venv/bin/python scripts/download_models.py --engine openvoice_v2_converter"
+  else
+    echo "  1. Download weights: .venv/bin/python scripts/download_models.py --engine $WITH_ENGINE"
+  fi
+  echo "  2. Launch VoiceCity: bash scripts/start_voicecity.sh"
 else
-  echo "  1. Launch VoiceCity UI:    bash scripts/start_voicecity.sh"
-  echo "  2. To enable local neural speech synthesis, re-run with:"
-  echo "     bash scripts/install_linux_mint.sh --with-engine indic_parler_openvoice --device auto"
+  echo "Launch UI now: bash scripts/start_voicecity.sh"
 fi

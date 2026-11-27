@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.routes import generations, system, voices
 from app.core.config import Settings, load_settings
 from app.core.database import VoiceCityDB
+from app.core.jobs import GenerationJobQueue
 from app.core.state import AppContext
 from app.core.storage import LocalStorage, StorageSecurityError
 from app.engine.registry import EngineRegistry, build_default_registry
@@ -27,6 +28,7 @@ def create_app(
     storage = LocalStorage(cfg)
     db = VoiceCityDB(cfg.db_path)
     registry = engine_registry or build_default_registry(cfg)
+    jobs = GenerationJobQueue(db=db, storage=storage)
 
     application = FastAPI(
         title="VoiceCity",
@@ -34,7 +36,7 @@ def create_app(
             "Original local-first personal voice studio for Urdu, English, and mixed "
             "Urdu-English speech generation."
         ),
-        version="0.2.0",
+        version="0.3.0",
     )
 
     application.state.ctx = AppContext(
@@ -42,6 +44,7 @@ def create_app(
         storage=storage,
         db=db,
         engines=registry,
+        jobs=jobs,
     )
 
     # Restrict browser origins to local loopback interfaces only
