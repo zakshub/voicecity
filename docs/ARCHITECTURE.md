@@ -34,20 +34,21 @@ models/<provider-or-model-id>/
 Runtime data must remain outside tracked source files.
 
 ## API direction
-Implemented:
-- GET /health
-- GET /api/v1/capabilities
+Implemented (Milestone 2):
+- `GET /health`
+- `GET /api/v1/capabilities`
+- `GET /api/v1/diagnostics`
+- `GET /api/v1/settings`, `PATCH /api/v1/settings`
+- `GET /api/v1/voices`, `POST /api/v1/voices/import`
+- `GET /api/v1/voices/{voice_id}`, `PATCH /api/v1/voices/{voice_id}`, `DELETE /api/v1/voices/{voice_id}`
+- `POST /api/v1/voices/{voice_id}/prepare`
+- `GET /api/v1/voices/{voice_id}/source-audio`, `GET /api/v1/voices/{voice_id}/reference-audio`
+- `POST /api/v1/text/analyze`
+- `GET /api/v1/generations`, `POST /api/v1/generations`
+- `GET /api/v1/generations/{generation_id}`, `DELETE /api/v1/generations/{generation_id}`
+- `GET /api/v1/generations/{generation_id}/audio?format=wav|mp3&download=0|1`
 
-Future endpoints, subject to review:
-- GET /api/v1/voices
-- POST /api/v1/voices/import
-- GET /api/v1/voices/{voice_id}
-- DELETE /api/v1/voices/{voice_id}
-- POST /api/v1/generations
-- GET /api/v1/generations/{generation_id}
-- GET /api/v1/generations/{generation_id}/audio
-
-Do not implement fake endpoints that imply working features.
+Endpoints never fabricate speech generation when local model weights are missing; `POST /api/v1/generations` returns structured `503 engine_not_ready` diagnostics until an approved local engine is installed and ready.
 
 ## Speech engine contract
 The eventual adapter should expose health_check, supported_languages, prepare_voice, generate, and capability metadata. It must declare model ID, version, license, language evidence, hardware requirements, and network behavior.

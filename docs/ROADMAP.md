@@ -15,15 +15,15 @@ Deliverables: product requirements, architecture, UX direction, privacy rules, m
 - [x] Repeatable 5-prompt PoC evaluation harness (`scripts/poc_eval.py`) and isolated Linux Mint setup script (`scripts/setup_poc_env.sh`).
 - [ ] Run isolated PoC on target Linux Mint laptop with user's ~2-minute WAV and record listening scores, RAM/VRAM, and RTF.
 
-## Phase 2: Core application
-- Voice library and local profile lifecycle.
-- Audio import and validation.
-- Model adapter and capability reporting.
-- Text-to-speech workflow.
-- Generation status and error handling.
-- Audio preview and WAV export.
+## Phase 2: Core application (Backend)
+**Status: Completed (`app/core`, `app/audio`, `app/text`, `app/engine`, `app/diagnostics`, `app/api/routes`).**
 
-Exit criteria: normal end-to-end local workflow without terminal operations.
+- [x] Application configuration (`.env` support, loopback defaults, isolated local storage outside Git).
+- [x] Local SQLite voice library, generation history, and settings persistence.
+- [x] Pure-Python WAV audio inspection (duration, sample rate, channels, bit depth, peak/RMS dBFS, clipping, silence ratio) and automatic clean 6–10s reference segment extraction preserving original audio.
+- [x] Deterministic Urdu, English, and mixed Urdu-English script segmentation and WAV cross-fade stitching.
+- [x] Provider-neutral `SpeechEngine` protocol, `EngineRegistry`, and truthful capability/diagnostic endpoints.
+- [x] WAV preview/download and runtime-detected `ffmpeg` MP3 export.
 
 ## Phase 3: Product quality
 - Generation history and comparison.
