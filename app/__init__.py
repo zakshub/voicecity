@@ -1,0 +1,1 @@
+"""VoiceCity application package."""
