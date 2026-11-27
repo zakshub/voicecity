@@ -2,59 +2,52 @@
 
 **An original, local-first personal voice studio for Urdu, English, and mixed Urdu-English voice cloning and speech generation.**
 
-VoiceCity helps you import your own WAV recording once, inspect its acoustic health, automatically prepare a clean reference clip, and generate Urdu, English, and mixed Urdu-English speech completely on your own Linux computer via a local browser workspace (`http://127.0.0.1:8765`).
+VoiceCity lets you import your own WAV recording once, inspect its acoustic quality, prepare a clean reference clip automatically, manage reference transcripts, and generate speech completely locally through your browser (`http://127.0.0.1:8765`).
 
-## Project status
+## Honest Project Status (5-Axis Verification)
 
-- **Application Core (Backend + Desktop Web UI + Audio Pipeline):** Implemented and tested
-- **Speech Engine Adapters:** Implemented (`indic_parler_openvoice` commercial default; `f5_tts_urdu` secondary Urdu-only adapter)
-- **Live Model Listening & Laptop Hardware Benchmarks:** **Pending execution on the target Linux Mint laptop** (heavyweight model checkpoints were intentionally NOT downloaded onto the Pixel 7 Pro PRoot dev environment)
-- **Primary languages:** Urdu (`ur`), English (`en`), and mixed Urdu-English (`mixed`)
-- **Initial deployment target:** Linux Mint desktop, accessed locally at `http://127.0.0.1:8765`
-- **Cost & Privacy principle:** Free, local-first, zero paid APIs, zero cloud voice upload by default
+| Verification Axis | Status |
+| :--- | :--- |
+| **Automated Tests Passed** | **Yes** (`22 passed, 3 skipped` in `pytest` + live `127.0.0.1` HTTP smoke test) |
+| **Model Integration Verified (Real Load)** | **Pending Linux Mint laptop** (heavyweight ML checkpoints are intentionally not downloaded on the Pixel 7 Pro dev container) |
+| **Actual Neural Speech Generated** | **No** (pending Linux Mint) |
+| **Human Listening Evaluation Completed** | **No** (pending Pakistani Urdu + English listening review on Linux Mint) |
+| **Commercial Licensing Verified** | **Yes** — see [docs/MODEL_LICENSING_REGISTER.md](docs/MODEL_LICENSING_REGISTER.md) |
 
-## Selected Speech Engines & Licensing
+## Strictly Separated Speech Engine Capabilities
 
-| Engine ID | Components | Code License | Weight License | Languages | Role |
+VoiceCity never disguises Standard TTS or experimental conversion as verified native voice cloning:
+
+| Engine ID | Capability Class | Maturity | Supported Languages | Code / Weight Licenses | Commercial Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `indic_parler_openvoice` | `ai4bharat/indic-parler-tts` + `myshell-ai/OpenVoiceV2` | Apache-2.0 + MIT | **Apache-2.0 + MIT** | Urdu, English, Mixed | **Distributable Commercial Default** |
-| `f5_tts_urdu` | `SWivid/F5-TTS` + `multilingual-tts/F5-TTS-OpenBible-Urdu` | MIT | **CC-BY-SA-4.0** | Urdu only | Secondary direct zero-shot Urdu option |
+| `f5_tts_urdu` | **Reference-Audio Voice Cloning** | Technically Integrated | **Urdu (`ur`) ONLY** | MIT / **CC-BY-SA-4.0** (Vocos MIT) | Optional ShareAlike (Attribution + ShareAlike on modified weights) |
+| `qwen3_tts_en` | **Reference-Audio Voice Cloning** | Technically Integrated | **English (`en`) ONLY** | **Apache-2.0 / Apache-2.0** | **Permissive Commercial** |
+| `dual_cloning_router` | **Reference-Audio Voice Cloning** (Compositional) | Technically Integrated | **Urdu (`f5_tts_urdu`) + English (`qwen3_tts_en`)**; Mixed = experimental stitching | MIT + Apache-2.0 / CC-BY-SA-4.0 + Apache-2.0 | Mixed (honestly exposes single-language cloning if only one is installed) |
+| `indic_parler_tts` | **Standard TTS ONLY (NOT Cloning)** | Technically Integrated | Urdu (`ur`), English (`en`) | **Apache-2.0 / Apache-2.0** | Permissive Commercial (ignores user WAV; synthetic voice only) |
+| `openvoice_v2_converter` | **Voice Conversion ONLY** (Audio-to-Audio) | Technically Integrated | Native: EN/ES/FR/ZH/JA/KO (**Urdu NOT native**) | **MIT / MIT** | Permissive Commercial (audio-to-audio converter only) |
+| `experimental_parler_openvoice` | **Cross-Linguistic Conversion** | **Experimental** | Native: EN; **Experimental: Urdu & Mixed** | **Apache-2.0 + MIT / Apache-2.0 + MIT** | Permissive licenses, **NOT verified native Urdu voice cloning** |
 
-*Non-commercial models (`Meta MMS Urdu` CC-BY-NC-4.0, `Coqui XTTS-v2` CPML, `Fish Speech 1.5` CC-BY-NC-SA-4.0) are explicitly excluded from the distributable default configuration. See [docs/MODEL_EVALUATION.md](docs/MODEL_EVALUATION.md) and [docs/discovery_report.md](docs/discovery_report.md).*
-
-## What Is Implemented
-
-- **7-Screen Desktop Web UI (`frontend/`):** Dashboard, Voice Library, Create Voice Profile, Text to Speech Studio (with RTL Urdu support & live mixed-script segment inspector), Audio Preview (with side-by-side comparison), Generation History, and Settings & Diagnostics.
-- **Pure-Python WAV Validation & Reference Preparation (`app/audio/service.py`):** Validates RIFF/WAVE PCM headers, inspects duration, sample rate, channels, bit depth, peak/RMS dBFS, clipping, and silence ratio, preserves the original ~2-minute WAV untouched, and automatically extracts a normalized 24 kHz mono 6–10s reference clip.
-- **Local-First Storage (`app/core/storage.py`, `app/core/database.py`):** SQLite persistence + confined filesystem directories (`data/`, `models/`) kept strictly outside Git.
-- **WAV & Optional MP3 Export:** Lossless WAV download built in; MP3 export activates automatically when `ffmpeg` is installed.
-- **Hardware Discovery & Linux Mint Tooling (`scripts/`):** `hardware_probe.py`, `poc_eval.py`, `install_linux_mint.sh`, `download_models.py`, `start_voicecity.sh`, `stop_voicecity.sh`.
+*Non-commercial checkpoints (`k2-fsa/OmniVoice` CC-BY-NC, `Meta MMS Urdu` CC-BY-NC-4.0, `Coqui XTTS-v2` CPML, `Fish Speech 1.5` CC-BY-NC-SA-4.0) and strong copyleft (`Seed-VC` GPL-3.0) are documented in [docs/MODEL_EVALUATION.md](docs/MODEL_EVALUATION.md) and excluded from distributable defaults.*
 
 ## Quick Start on Linux Mint
 
-See the complete non-technical guide in [docs/LINUX_MINT_GUIDE.md](docs/LINUX_MINT_GUIDE.md).
+See the step-by-step guide in [docs/LINUX_MINT_GUIDE.md](docs/LINUX_MINT_GUIDE.md).
 
 ```bash
 git clone https://github.com/zakshub/voicecity.git
 cd voicecity
-bash scripts/install_linux_mint.sh --with-engine indic_parler_openvoice --device auto
-.venv/bin/python scripts/download_models.py --engine indic_parler_openvoice
+python3 scripts/hardware_probe.py
+bash scripts/install_linux_mint.sh --with-engine dual_cloning --device auto
+.venv/bin/python scripts/download_models.py --engine dual_cloning
 bash scripts/start_voicecity.sh
 ```
 
 Then open **http://127.0.0.1:8765** in your browser.
 
-## Repository map
+## Repository Map
 
-- `app/`: FastAPI backend, audio pipeline, SQLite repository, Urdu/English text segmenter, speech engine adapters, diagnostics
-- `frontend/`: Zero-build desktop web studio UI served locally by FastAPI
-- `scripts/`: Hardware probe, PoC evaluation harness, Linux Mint installer, consent-driven model downloader, start/stop launchers
-- `docs/`: Product requirements, architecture, discovery report, model evaluation, Linux Mint guide, roadmap, privacy & security
-- `tests/`: Automated pytest suite (explicitly marking laptop-hardware neural listening tests as skipped/pending)
-- `pyproject.toml`: Python package configuration
-- `.env.example`: Environment variable template
-- `.gitignore`: Strict exclusions for audio recordings, embeddings, weights, SQLite DBs, and secrets
-
-## License
-
-Project license decision remains recorded in [docs/OPEN_DECISIONS.md](docs/OPEN_DECISIONS.md); all default dependencies and default speech model weights have been chosen for commercial compatibility (Apache-2.0 / MIT).
+- `app/`: FastAPI local backend, pure-Python WAV inspection & slicing, SQLite store, async generation queue with cancellation, Urdu/English text normalizer & segmenter, separated engine adapters, hardware diagnostics
+- `frontend/`: Zero-build 7-screen desktop web UI (`Dashboard`, `Voice Library`, `Create Voice Profile`, `Text to Speech Studio`, `Audio Preview`, `Generation History`, `Settings`)
+- `scripts/`: `hardware_probe.py`, `poc_eval.py`, `install_linux_mint.sh`, `download_models.py`, `start_voicecity.sh`, `stop_voicecity.sh`, `voicecity.desktop.template`
+- `docs/`: [MODEL_EVALUATION.md](docs/MODEL_EVALUATION.md), [MODEL_LICENSING_REGISTER.md](docs/MODEL_LICENSING_REGISTER.md), [LINUX_MINT_GUIDE.md](docs/LINUX_MINT_GUIDE.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [ROADMAP.md](docs/ROADMAP.md), [ACCEPTANCE_CHECKLIST.md](docs/ACCEPTANCE_CHECKLIST.md), [discovery_report.md](docs/discovery_report.md)
+- `tests/`: Automated pytest suite keeping hardware-dependent live speech & listening tests explicitly `SKIPPED` (`PENDING_LAPTOP_HARDWARE`)

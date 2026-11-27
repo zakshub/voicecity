@@ -1,32 +1,26 @@
 # VoiceCity Acceptance Checklist
 
-## Repository & Hygiene
-- [x] README explains scope, implemented features, licensing, and pending hardware tests.
-- [x] Product, architecture, UX, privacy, model evaluation, Linux Mint guide, discovery report, and roadmap docs exist.
-- [x] Open decisions are recorded (`docs/OPEN_DECISIONS.md`).
-- [x] Antigravity handoff is complete (`docs/ANTIGRAVITY_HANDOFF.md`).
-- [x] No user audio, embeddings, SQLite DBs, or model weights are tracked in Git.
-- [x] No credentials or real environment values are committed.
+## Repository & Licensing Hygiene
+- [x] README, Architecture, Model Evaluation Matrix, Model Licensing Register, Linux Mint Guide, Discovery Report, and Roadmap are synchronized and free of misleading engine claims.
+- [x] Four capability classes (`standard_tts`, `reference_voice_cloning`, `voice_conversion`, `cross_linguistic_voice_conversion`) are strictly separated in code, API, UI, and docs.
+- [x] `Indic Parler-TTS` is truthfully labelled Standard TTS ONLY (not voice cloning); `OpenVoice v2` truthfully discloses Urdu is not native; `experimental_parler_openvoice` is explicitly marked experimental.
+- [x] ShareAlike (`F5-TTS-OpenBible-Urdu` CC-BY-SA-4.0) is kept optional and clearly identified; non-commercial checkpoints (`OmniVoice`, `MMS`, `XTTS-v2`, `Fish 1.5`) are excluded from distributable defaults.
+- [x] No user recordings, embeddings, SQLite DBs, secrets, or model weights are tracked in Git.
 
-## Application Backend, Audio Pipeline & Web UI
-- [x] Python package imports and starts cleanly on `127.0.0.1`.
-- [x] `/health` and `/api/v1/capabilities` return truthful live readiness status.
-- [x] `/api/v1/capabilities` never claims speech generation is ready when local model weights are missing.
-- [x] WAV validation inspects RIFF/WAVE header, duration, sample rate, channels, bit depth, peak/RMS dBFS, clipping, and silence ratio.
-- [x] Automatic reference preparation extracts a clean 6–10s 24 kHz mono clip while preserving the original WAV untouched.
-- [x] Invalid audio (empty, corrupt, non-WAV, silent, oversized, missing consent, path traversal) is safely rejected.
-- [x] Urdu, English, and mixed Urdu-English text normalization and segmentation verified.
-- [x] Voice profile CRUD, generation history, preview playback, WAV export, and SQLite persistence across restarts verified.
-- [x] Original 7-screen desktop web UI (`Dashboard`, `Voice Library`, `Create Voice Profile`, `Text to Speech Studio`, `Audio Preview`, `Generation History`, `Settings`) served locally with WCAG 2.2 accessibility markers and RTL Urdu input.
-- [x] Commercially permissive default engine adapter (`indic_parler_openvoice`: Apache-2.0 + MIT) and secondary Urdu adapter (`f5_tts_urdu`: MIT + CC-BY-SA-4.0) integrated; non-commercial models excluded from distributable defaults.
-- [x] Turnkey Linux Mint installation, model download, and start/stop scripts created and syntax-verified.
+## Verified Application Functionality (Automated QA)
+- [x] Application starts cleanly on `127.0.0.1` and serves all 7 desktop web UI screens.
+- [x] Pure-Python 8/16/24/32-bit WAV validation, acoustic inspection, and automatic clean reference slicing preserving original WAV untouched.
+- [x] Invalid audio (empty, corrupt, non-WAV, silent, oversized, missing consent, path traversal) safely rejected.
+- [x] Voice profile CRUD, inline reference transcript editing, re-preparation, and complete disk cleanup on deletion.
+- [x] Urdu/English normalization (Kaf/Yeh, digits, ZWNJ, `?`→`؟`), mixed-language segmentation, and pronunciation hints.
+- [x] Background generation job queue with live progress reporting, cooperative cancellation, and error recovery.
+- [x] Dedicated audio-to-audio Voice Conversion API (`POST /api/v1/conversions`) and offline local model verifier (`GET /api/v1/models/verify`).
 - [x] Automated `pytest` suite passes with hardware-dependent live neural tests explicitly marked `SKIPPED` (`PENDING_LAPTOP_HARDWARE`).
 
-## Pending Linux Mint Laptop Verification (Cannot Be Performed on Pixel 7 Pro Phone)
-- [ ] Record target Linux Mint laptop hardware specs (`python3 scripts/hardware_probe.py`).
-- [ ] Install engine dependencies and download local model weights on Linux Mint.
-- [ ] Test existing ~2-minute WAV recording end-to-end with live neural inference.
-- [ ] Complete 1–5 Pakistani Urdu, English, and mixed-language listening review (`scripts/poc_eval.py`).
-- [ ] Measure real TTFA, RTF, peak RAM, and peak VRAM on Linux Mint.
-- [ ] Verify air-gapped offline inference with network disabled after model caching.
-- [ ] Verify MP3 export on Linux Mint after `sudo apt install ffmpeg`.
+## Pending Linux Mint Laptop Verification (Cannot Run on Pixel 7 Pro Phone)
+- [ ] Run `python3 scripts/hardware_probe.py` on Linux Mint to capture exact CPU, RAM, GPU, VRAM, and disk.
+- [ ] Install Python 3.11/3.12 ML runtimes and download weights (`f5_tts_urdu` + `qwen3_tts_en`, and optionally `indic_parler_tts` + `openvoice_v2_converter`).
+- [ ] Verify actual model loading (`model_integration_verified`) on Linux Mint hardware.
+- [ ] Generate actual Pakistani Urdu, English, and mixed speech from your existing ~2-minute WAV (`actual_speech_generated`).
+- [ ] Complete 1–5 human listening evaluation (`human_listening_completed`) comparing F5-TTS Urdu, Qwen3-TTS English, Dual Cloning Router, and Experimental Parler→OpenVoice.
+- [ ] Verify air-gapped offline inference (network disabled) and live `ffmpeg` MP3 export.

@@ -1,21 +1,14 @@
 # Open Decisions
 
-| Decision | Current position | Evidence / Status |
+| Decision | Current Position | Honest Status & Blockers |
 | :--- | :--- | :--- |
-| Default speech engine | `indic_parler_openvoice` (`ai4bharat/indic-parler-tts` Apache-2.0 + `myshell-ai/OpenVoiceV2` MIT) | Commercially permissive; **live Pakistani Urdu listening & laptop RTF/VRAM still pending on Linux Mint** |
-| Secondary Urdu engine | `f5_tts_urdu` (`SWivid/F5-TTS` MIT + `F5-TTS-OpenBible-Urdu` CC-BY-SA-4.0) | Urdu-only direct zero-shot adapter; **live listening & CPU speed still pending on Linux Mint** |
-| Non-commercial models | Meta MMS Urdu (CC-BY-NC-4.0), Coqui XTTS-v2 (CPML), Fish Speech 1.5 (CC-BY-NC-SA-4.0) | Explicitly excluded from distributable defaults |
-| Frontend stack | Zero-build semantic HTML5 + CSS + ES2022 served by FastAPI (`frontend/`) | Chosen to eliminate Node.js runtime dependency on Linux Mint and keep 100% offline operation |
-| Metadata storage | Local SQLite (`data/voicecity.db`) + per-profile JSON manifest (`profile.json`) | Implemented and verified across restarts |
-| Audio formats | Uncompressed PCM WAV first (pure Python, zero external decoder required) | Implemented and verified |
-| MP3 export | Runtime-detected `ffmpeg` (`libmp3lame`) optional export | Implemented; gracefully disabled when `ffmpeg` is absent |
-| Commercial release | Preserved via Apache-2.0 / MIT default stack | Final repo license still pending user selection |
-| Project license | Pending owner choice (MIT / Apache-2.0 compatible with default stack) | Awaiting Zak's selection |
-| Packaging | Turnkey Linux Mint shell scripts + `.desktop` launcher (`scripts/`) | Implemented; AppImage/Flatpak deferred |
-| GPU runtime | Auto-detects NVIDIA CUDA (`>=4 GB VRAM`) with CPU fallback | Pending actual Linux Mint laptop hardware probe |
-| Remote inference | Disabled by default (`VOICECITY_ALLOW_REMOTE_INFERENCE=false`) | Enforced in config and API diagnostics |
-
-## Known constraints
-- Initial voice sample is approximately two minutes and available as WAV; VoiceCity automatically extracts a clean 6–10s reference clip without requiring another recording.
-- Pixel 7 Pro Termux/PRoot environment is strictly for development and automated testing — never for heavyweight ML model downloads or inference.
-- Live Pakistani Urdu, English, and mixed-language listening quality remain **untested** until executed on the Linux Mint laptop.
+| Urdu Reference Voice Cloning | `f5_tts_urdu` (`F5-TTS-OpenBible-Urdu`, **CC-BY-SA-4.0 optional ShareAlike**) | Technically integrated; **untested** on Pakistani Urdu speech; no permissive Apache-2.0/MIT Urdu zero-shot voice cloning checkpoint currently verified |
+| English Reference Voice Cloning | `qwen3_tts_en` (`Qwen3-TTS-12Hz-0.6B-Base`, **Apache-2.0 permissive**) | Technically integrated; **untested** on target Linux Mint laptop |
+| Mixed Urdu-English Cloning | `dual_cloning_router` (`f5_tts_urdu` + `qwen3_tts_en`) | Cross-model timbre consistency between F5-TTS and Qwen3-TTS is **empirically unverified** |
+| Experimental Cross-Linguistic Conversion | `experimental_parler_openvoice` (`Indic Parler-TTS` Apache-2.0 → `OpenVoice v2` MIT) | Strictly marked **EXPERIMENTAL** because Indic Parler is Standard TTS and Urdu is NOT a documented native OpenVoice v2 language |
+| Non-Commercial Models | `k2-fsa/OmniVoice` (CC-BY-NC), `Meta MMS Urdu` (CC-BY-NC-4.0), `Coqui XTTS-v2` (CPML), `Fish Speech 1.5` (CC-BY-NC-SA-4.0) | Excluded from distributable defaults; documented in `docs/MODEL_LICENSING_REGISTER.md` |
+| Frontend Stack | Zero-build HTML5 + CSS + ES2022 served directly by FastAPI | Implemented; eliminates Node.js runtime requirement on Linux Mint |
+| Metadata & Job Queue | Local SQLite (`data/voicecity.db`) + single-worker thread queue with cancellation | Implemented & verified in automated tests |
+| Audio Formats | Pure-Python PCM WAV + runtime-detected `ffmpeg` MP3 | WAV verified; live `ffmpeg` MP3 encoding pending Linux Mint |
+| Project License | Pending owner choice (compatible with MIT / Apache-2.0 core app) | Core app dependencies are 100% permissive; optional CC-BY-SA-4.0 Urdu weights kept external/user-downloaded |
+| Target Hardware | Linux Mint laptop (exact CPU/RAM/GPU/VRAM unknown until probed) | Phone dev environment (`aarch64` PRoot Debian 13, Python 3.13 Android SOABI) cannot run or benchmark ML inference |

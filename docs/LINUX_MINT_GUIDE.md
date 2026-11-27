@@ -1,64 +1,80 @@
 # VoiceCity — Linux Mint Installation & User Guide
 
-VoiceCity runs completely on your own Linux Mint computer and opens in your web browser at `http://127.0.0.1:8765`. Your voice recordings, profiles, and generated speech never leave your computer.
+VoiceCity runs completely on your own Linux Mint laptop and opens locally at `http://127.0.0.1:8765`. Your voice recordings, profiles, and generated audio stay strictly on your machine.
 
 ---
 
-## 1. Prerequisites on Linux Mint
+## 1. System Prerequisites on Linux Mint
 
-Open the Linux Mint **Terminal** and install the standard system tools (including `ffmpeg` for optional MP3 downloads):
+Open **Terminal** on Linux Mint and run:
 
 ```bash
 sudo apt update
 sudo apt install -y git python3 python3-venv python3-pip ffmpeg curl
 ```
 
+*(Checking hardware first: `python3 scripts/hardware_probe.py` prints your exact CPU, RAM, disk, and GPU/VRAM without downloading any ML packages.)*
+
 ---
 
-## 2. Clone & Install VoiceCity
+## 2. Clone & Choose Which Speech Engine(s) to Install
 
 ```bash
 git clone https://github.com/zakshub/voicecity.git
 cd voicecity
 ```
 
-### Option A — Install VoiceCity with the Default Commercial Speech Engine (`indic_parler_openvoice`)
-Supports **Urdu, English, and Mixed Urdu-English** using 100% commercially permissive weights (`Apache-2.0` + `MIT`):
+VoiceCity strictly separates **Reference-Audio Voice Cloning** from **Standard TTS** and **Experimental Voice Conversion**:
+
+### Recommended for Genuine Personal Voice Cloning (Urdu + English): `dual_cloning`
+Installs BOTH specialist reference-audio cloning engines:
+- **Urdu Voice Cloning:** `f5_tts_urdu` (`F5-TTS-OpenBible-Urdu`, optional **CC-BY-SA-4.0** ShareAlike, requires reference transcript)
+- **English Voice Cloning:** `qwen3_tts_en` (`Qwen3-TTS-12Hz-0.6B-Base`, permissive **Apache-2.0**)
 
 ```bash
-bash scripts/install_linux_mint.sh --with-engine indic_parler_openvoice --device auto
+bash scripts/install_linux_mint.sh --with-engine dual_cloning --device auto
 ```
 
-*(Pass `--device cpu` if you want CPU-only PyTorch without CUDA libraries, or `--device cuda` if you have an NVIDIA GPU with proprietary drivers installed).*
+### Other Focused Installation Options
+- **English Voice Cloning Only (100% Apache-2.0 permissive):**
+  ```bash
+  bash scripts/install_linux_mint.sh --with-engine qwen3_tts_en --device auto
+  ```
+- **Urdu Voice Cloning Only (CC-BY-SA-4.0 optional):**
+  ```bash
+  bash scripts/install_linux_mint.sh --with-engine f5_tts_urdu --device auto
+  ```
+- **Experimental Cross-Linguistic Conversion (`Indic Parler-TTS` + `OpenVoice v2`, Apache-2.0 + MIT — NOTE: Urdu is NOT native to OpenVoice v2):**
+  ```bash
+  bash scripts/install_linux_mint.sh --with-engine experimental_parler_openvoice --device auto
+  ```
 
-### Option B — Install the Secondary Direct Urdu Engine (`f5_tts_urdu`)
-Supports **Urdu only** (`MIT` code + `CC-BY-SA-4.0` weights):
-
-```bash
-bash scripts/install_linux_mint.sh --with-engine f5_tts_urdu --device auto
-```
+*(Replace `--device auto` with `--device cpu` if your laptop has no NVIDIA GPU, or `--device cuda` for NVIDIA CUDA).*
 
 ---
 
-## 3. Download Local Model Weights (One-Time Setup)
+## 3. Download & Verify Local Model Weights (One-Time Setup)
 
-Run the consent-driven downloader to cache the speech models locally into `./models/` so future speech generation works offline:
+Download weights directly into `./models/` (prompts for explicit license acknowledgment and checks free disk space):
 
 ```bash
-.venv/bin/python scripts/download_models.py --engine indic_parler_openvoice
+.venv/bin/python scripts/download_models.py --engine dual_cloning
 ```
 
-*(Estimated download: ~4.2 GB; requires at least 10 GB free disk space. For `f5_tts_urdu`, download is ~5.5 GB).*
+To verify cached local model files offline at any time (no network access):
+```bash
+.venv/bin/python scripts/download_models.py --engine dual_cloning --verify-only
+```
 
 ---
 
 ## 4. Starting & Stopping VoiceCity
 
-- **Start VoiceCity** (starts local server on `127.0.0.1:8765` and opens your browser):
+- **Start locally (`127.0.0.1:8765`):**
   ```bash
   bash scripts/start_voicecity.sh
   ```
-- **Stop VoiceCity:**
+- **Stop cleanly:**
   ```bash
   bash scripts/stop_voicecity.sh
   ```
@@ -70,65 +86,27 @@ Run the consent-driven downloader to cache the speech models locally into `./mod
 
 ---
 
-## 5. Adding Your Existing ~2-Minute WAV Recording & Creating a Profile
+## 5. Importing Your Existing ~2-Minute WAV & Setting the Reference Transcript
 
-You do **not** need to record a new sample or manually trim your ~2-minute WAV file.
-
-1. Open `http://127.0.0.1:8765` in Firefox or Chromium.
-2. Click **Create Voice Profile** in the left navigation bar.
-3. Enter a profile name (for example, `My Personal Voice`).
-4. Click or drag-and-drop your existing ~2-minute `.wav` recording.
-5. Keep the **Automatic Reference Segment Length** at `8.0s` (VoiceCity automatically finds the cleanest active speech window inside your recording, normalizes it to 24 kHz mono, and keeps your original WAV untouched).
-6. Check the **Ownership Confirmation** box and click **Import & Inspect Recording**.
-7. Listen to the **Prepared Reference Clip** on the right panel to confirm it sounds clear and unclipped.
+1. Open **http://127.0.0.1:8765** → click **Create Voice Profile**.
+2. Drag and drop your existing ~2-minute `.wav` file (your original recording is preserved untouched inside `./data/voice_profiles/<id>/source_audio.wav`).
+3. Keep **Automatic Reference Segment Length** at `8.0s` — VoiceCity automatically extracts the cleanest active speech window and normalizes it to 24 kHz mono.
+4. Check the **Ownership Confirmation** box and click **Import & Inspect Recording**.
+5. Open **Voice Library**, listen to the **Prepared Reference Clip**, and enter the exact spoken words of that 8-second clip in **Reference Clip Transcript** → click **Save Transcript**. *(Required for strict offline F5-TTS Urdu cloning so no Whisper ASR download is triggered; also improves Qwen3-TTS English cloning accuracy).*
 
 ---
 
-## 6. Generating Urdu, English, and Mixed Speech
+## 6. Generating Speech & Monitoring Progress
 
-1. Click **Text to Speech Studio**.
-2. Select your voice profile in **Voice Profile**.
-3. Choose **Language Mode**:
-   - **Urdu (اردو)** for Urdu script (automatically switches to right-to-left input).
-   - **English** for English sentences.
-   - **Mixed Urdu + English** for code-switched Pakistani speech (click **Inspect Language Segments** to preview how VoiceCity splits Urdu and English spans).
-4. Adjust **Speaking Speed** (`0.6x–1.5x`) and **Delivery Style** (`Neutral`, `Clear`, `Warm`, `Calm`).
-5. Click **Generate Speech**.
-6. On the **Audio Preview** screen, play the result, compare previous attempts, and click **Download WAV** (or **Download MP3** when `ffmpeg` is installed).
+1. Click **Text to Speech Studio** and select your voice profile.
+2. Check the **Active Speech Engine** panel to confirm which languages (`ur`, `en`, `mixed`) are ready.
+3. Enter Urdu, English, or mixed text; click **Inspect Language Segments** to see detected spans and pronunciation hints (e.g., abbreviations like `PKR` or `Rs.`).
+4. Click **Queue Speech Generation**. You can monitor live progress (`0–100%`) or click **Cancel** at any time.
+5. Preview and compare clips on **Audio Preview**, and export as **WAV** (or **MP3** when `ffmpeg` is installed).
 
 ---
 
-## 7. Evaluating Pakistani Urdu Quality on Your Laptop
+## 7. Backup & Troubleshooting
 
-Before trusting any model for daily production use, run the repeatable 5-prompt listening benchmark with your own WAV recording:
-
-```bash
-.venv/bin/python scripts/poc_eval.py \
-  --engine indic_parler_openvoice \
-  --reference-wav /path/to/your_2min_voice.wav \
-  --output-dir data/eval_runs
-```
-
----
-
-## 8. Backup, Restore & Privacy
-
-- All personal data lives exclusively inside `./data/` (excluded from Git via `.gitignore`):
-  - `data/voicecity.db` — profile metadata, generation history, and preferences
-  - `data/voice_profiles/<id>/source_audio.wav` — your untouched original recording
-  - `data/voice_profiles/<id>/reference_segment.wav` — auto-prepared 24 kHz reference clip
-  - `data/generated/<profile-id>/<gen-id>.wav` — generated audio clips
-- **Backup:** Copy the `data/` folder to an encrypted local drive while VoiceCity is stopped.
-- **Restore:** Copy `data/` back into the VoiceCity directory and start the server.
-
----
-
-## 9. Troubleshooting
-
-| Symptom | Cause | Fix |
-| :--- | :--- | :--- |
-| Studio says **Engine Not Installed** | PyTorch/engine packages or local model weights are missing | Run `bash scripts/install_linux_mint.sh --with-engine indic_parler_openvoice` and `.venv/bin/python scripts/download_models.py --engine indic_parler_openvoice` |
-| **MP3 Unavailable** button is disabled | `ffmpeg` is not installed | Run `sudo apt install -y ffmpeg` and refresh VoiceCity |
-| Generation is slow on CPU | No NVIDIA CUDA GPU available | Expected on CPU-only laptops; keep text clips concise (1–3 sentences per pass) |
-| Upload rejected as invalid WAV | File is MP3/M4A renamed to `.wav`, compressed WAV, or silent | Convert to uncompressed PCM WAV: `ffmpeg -i input.m4a -ar 24000 -ac 1 output.wav` |
-| Port 8765 already in use | Another process or previous instance is running | Run `bash scripts/stop_voicecity.sh` or set `VOICECITY_PORT=8766` in `.env` |
+- **Backup:** Stop VoiceCity and copy `./data/` to an encrypted drive. Never commit `./data/` or `./models/` to Git.
+- **Note on Phone/Termux vs. Linux Mint:** The Pixel 7 Pro Termux/PRoot environment uses Android `aarch64` Python 3.13 SOABI where Rust-compiled wheels (`ruff`, `pydantic-core`) and PyTorch CUDA wheels are unavailable. On standard `x86_64` Linux Mint with Python 3.11 or 3.12, prebuilt binary wheels install cleanly.

@@ -1,62 +1,34 @@
 # Delivery Roadmap
 
-Dates are intentionally not assigned until hardware and model feasibility are known.
+Dates are intentionally not assigned for hardware-dependent listening validation until run on the target Linux Mint laptop.
 
-## Phase 0: Foundation and discovery
-**Status: Completed (`docs/discovery_report.md`).**
+## Phase 0: Foundation and discovery — Completed (`7c53b49`)
+- Product requirements, architecture, UX direction, privacy rules, primary-source discovery report (`docs/discovery_report.md`).
 
-Deliverables: product requirements, architecture, UX direction, privacy rules, model evaluation framework, lightweight API scaffold, container hardware probe, primary-source candidate report.
+## Phase 1: Technical proof-of-concept tooling — Completed (`b308ce7`, refined in `848bc84`)
+- Cross-platform hardware probe (`scripts/hardware_probe.py`) with Android/PRoot safety guard.
+- Repeatable 5-prompt PoC harness (`scripts/poc_eval.py`) and isolated Linux Mint setup (`scripts/setup_poc_env.sh`).
+- **Pending on Linux Mint:** Real laptop hardware readout, actual model loading, RTF/VRAM measurement, and 1–5 listening scores.
 
-## Phase 1: Technical proof of concept
-**Status: Tooling & evaluation harness completed; live audio listening & laptop RTF/VRAM measurements pending target Linux Mint laptop.**
+## Phase 2: Local-first backend & async queue — Completed (`a7d67a6`, upgraded in `848bc84`)
+- Loopback FastAPI server, SQLite persistence, confined local file storage, pure-Python WAV validation & automatic reference slicing, Urdu/English text normalization & pronunciation hints, background generation queue with progress & cancellation, audio-to-audio voice conversion API, offline model cache verifier.
 
-- [x] Commercial-license verification separating permissive defaults (`Indic Parler-TTS` Apache-2.0 + `OpenVoice v2` MIT; optional `Kokoro-82M`/`MeloTTS`; secondary `F5-TTS-OpenBible-Urdu` CC-BY-SA-4.0) from excluded non-commercial checkpoints (Meta MMS, Coqui XTTS-v2, Fish 1.5).
-- [x] Cross-platform hardware discovery script (`scripts/hardware_probe.py`) with Android/PRoot safety guard.
-- [x] Repeatable 5-prompt PoC evaluation harness (`scripts/poc_eval.py`) and isolated Linux Mint setup script (`scripts/setup_poc_env.sh`).
-- [ ] Run isolated PoC on target Linux Mint laptop with user's ~2-minute WAV and record listening scores, RAM/VRAM, and RTF.
+## Phase 3: Desktop-first web UI — Completed (`4230d20`, upgraded in `9b822ab`)
+- Original 7-screen light-theme desktop audio workspace grounded in `docs/UX_DIRECTION.md` and WCAG 2.2 label/accessibility standards, featuring separated 4-class capability matrix, 5-axis verification display, inline reference transcript editor, and live queue progress + cancellation.
 
-## Phase 2: Core application (Backend)
-**Status: Completed (`app/core`, `app/audio`, `app/text`, `app/engine`, `app/diagnostics`, `app/api/routes`).**
+## Phase 4: Corrected separated speech engine architecture — Completed (`11c40ba`)
+- Distinct, honestly classified adapters:
+  - `f5_tts_urdu` (`reference_voice_cloning`, Urdu ONLY, CC-BY-SA-4.0 optional)
+  - `qwen3_tts_en` (`reference_voice_cloning`, English ONLY, Apache-2.0 permissive)
+  - `dual_cloning_router` (`reference_voice_cloning`, compositional Urdu + English + Mixed)
+  - `indic_parler_tts` (`standard_tts` ONLY — NOT voice cloning, Apache-2.0)
+  - `openvoice_v2_converter` (`voice_conversion` ONLY — Urdu NOT native, MIT)
+  - `experimental_parler_openvoice` (`cross_linguistic_voice_conversion`, `experimental`)
+- Complete 12-candidate honest evaluation matrix (`docs/MODEL_EVALUATION.md`) and authoritative licensing register (`docs/MODEL_LICENSING_REGISTER.md`).
 
-- [x] Application configuration (`.env` support, loopback defaults, isolated local storage outside Git).
-- [x] Local SQLite voice library, generation history, and settings persistence.
-- [x] Pure-Python WAV audio inspection (duration, sample rate, channels, bit depth, peak/RMS dBFS, clipping, silence ratio) and automatic clean 6–10s reference segment extraction preserving original audio.
-- [x] Deterministic Urdu, English, and mixed Urdu-English script segmentation and WAV cross-fade stitching.
-- [x] Provider-neutral `SpeechEngine` protocol, `EngineRegistry`, and truthful capability/diagnostic endpoints.
-- [x] WAV preview/download and runtime-detected `ffmpeg` MP3 export.
+## Phase 5: Local Linux Mint experience — Completed (`c1b53be`, updated in `848bc84`)
+- Turnkey Linux Mint installer, consent-driven downloader with offline `--verify-only`, loopback start/stop launchers, `.desktop` menu template, and user guide (`docs/LINUX_MINT_GUIDE.md`).
 
-## Phase 3: Frontend, UX, and product quality
-**Status: Completed (`frontend/index.html`, `frontend/assets/styles.css`, `frontend/assets/app.js`).**
-
-- [x] Original light-theme desktop audio workspace (zero external CDN/font dependencies, served directly by FastAPI on `127.0.0.1:8765`).
-- [x] All 7 screens implemented: Dashboard, Voice Library, Create Voice Profile, Text to Speech Studio, Audio Preview (with side-by-side comparison), Generation History, Settings & Diagnostics.
-- [x] WCAG 2.2 visible label/name alignment, keyboard navigation, `:focus-visible`, RTL Urdu script input, and truthful missing-engine states.
-- [x] Conditional MP3 export UI alongside lossless WAV download.
-
-## Phase 4: Speech engine integration
-**Status: Adapters implemented and contract-tested; live audio listening & hardware benchmarks pending Linux Mint laptop.**
-
-- [x] Default commercially permissive engine adapter: `indic_parler_openvoice` (`ai4bharat/indic-parler-tts` Apache-2.0 + `myshell-ai/OpenVoiceV2` MIT) supporting Urdu, English, and deterministic mixed Urdu-English synthesis with CPU fallback and CUDA auto-detection.
-- [x] Secondary direct zero-shot Urdu adapter: `f5_tts_urdu` (`SWivid/F5-TTS` MIT + `multilingual-tts/F5-TTS-OpenBible-Urdu` CC-BY-SA-4.0), truthfully constrained to Urdu-only with explicit offline transcript guard.
-- [x] Non-commercial weights (`Meta MMS Urdu`, `Coqui XTTS-v2`, `Fish Speech 1.5`) excluded from distributable defaults.
-- [ ] Execute live audio generation and 1–5 human listening review on the Linux Mint laptop.
-
-## Phase 5: Local Linux Mint packaging and handover
-**Status: Completed (`scripts/install_linux_mint.sh`, `scripts/download_models.py`, `scripts/start_voicecity.sh`, `scripts/stop_voicecity.sh`, `scripts/voicecity.desktop.template`, `docs/LINUX_MINT_GUIDE.md`).**
-
-- [x] Turnkey Linux Mint installation script with CPU/CUDA selection and PRoot phone guard.
-- [x] Consent-driven local model weight downloader displaying code + weight licenses and checking free disk space.
-- [x] Loopback-only (`127.0.0.1:8765`) start/stop scripts and `.desktop` launcher template.
-- [x] Non-technical user guide covering installation, model setup, WAV import, profile creation, speech generation, backup/restore, and troubleshooting.
-- [x] Updated README, open decisions, and architecture docs.
-
-## Phase 6: Quality assurance
-**Status: Automated QA suite & live loopback smoke test completed; hardware-dependent live neural audio tests explicitly marked `PENDING_LAPTOP_HARDWARE`.**
-
-- [x] Application startup & live `127.0.0.1` HTTP smoke test verified.
-- [x] Audio upload (16-bit & 24-bit WAV, stereo→mono slicing) and invalid audio handling (empty, corrupt, non-WAV, silent, oversized, missing consent, path traversal) verified.
-- [x] Voice profile lifecycle, text generation pipeline, Urdu/English/mixed segmentation, audio playback, WAV download, SQLite restart persistence, privacy boundaries, and error recovery verified.
-- [ ] Live Pakistani Urdu/English neural listening review, RTF/VRAM measurement, air-gapped offline test, and `ffmpeg` MP3 export test on Linux Mint laptop (explicitly marked `SKIPPED` in pytest).
-
-## Deferred
-Video dubbing, transcription, live conversion, cloud sync, multi-user access, mobile app, and automated content production are outside the first release.
+## Phase 6: Automated QA & pending laptop validation — Automated QA Completed (`df0c403`, expanded through current HEAD)
+- Automated backend, audio, queue, cancellation, capability-separation, and UI test suites passing (`22 passed, 3 skipped`).
+- **Pending on Linux Mint:** Live neural speech generation, Pakistani Urdu + English listening review, air-gapped offline confirmation, and live `ffmpeg` MP3 export.
