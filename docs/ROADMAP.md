@@ -51,7 +51,12 @@ Deliverables: product requirements, architecture, UX direction, privacy rules, m
 - [x] Updated README, open decisions, and architecture docs.
 
 ## Phase 6: Quality assurance
-**Status: Pending final QA pass.**
+**Status: Automated QA suite & live loopback smoke test completed; hardware-dependent live neural audio tests explicitly marked `PENDING_LAPTOP_HARDWARE`.**
+
+- [x] Application startup & live `127.0.0.1` HTTP smoke test verified.
+- [x] Audio upload (16-bit & 24-bit WAV, stereo→mono slicing) and invalid audio handling (empty, corrupt, non-WAV, silent, oversized, missing consent, path traversal) verified.
+- [x] Voice profile lifecycle, text generation pipeline, Urdu/English/mixed segmentation, audio playback, WAV download, SQLite restart persistence, privacy boundaries, and error recovery verified.
+- [ ] Live Pakistani Urdu/English neural listening review, RTF/VRAM measurement, air-gapped offline test, and `ffmpeg` MP3 export test on Linux Mint laptop (explicitly marked `SKIPPED` in pytest).
 
 ## Deferred
 Video dubbing, transcription, live conversion, cloud sync, multi-user access, mobile app, and automated content production are outside the first release.
