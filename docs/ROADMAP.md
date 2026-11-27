@@ -25,12 +25,13 @@ Deliverables: product requirements, architecture, UX direction, privacy rules, m
 - [x] Provider-neutral `SpeechEngine` protocol, `EngineRegistry`, and truthful capability/diagnostic endpoints.
 - [x] WAV preview/download and runtime-detected `ffmpeg` MP3 export.
 
-## Phase 3: Product quality
-- Generation history and comparison.
-- Audio inspection and recovery.
-- Settings and model management.
-- MP3 export if justified.
-- Accessibility and usability review.
+## Phase 3: Frontend, UX, and product quality
+**Status: Completed (`frontend/index.html`, `frontend/assets/styles.css`, `frontend/assets/app.js`).**
+
+- [x] Original light-theme desktop audio workspace (zero external CDN/font dependencies, served directly by FastAPI on `127.0.0.1:8765`).
+- [x] All 7 screens implemented: Dashboard, Voice Library, Create Voice Profile, Text to Speech Studio, Audio Preview (with side-by-side comparison), Generation History, Settings & Diagnostics.
+- [x] WCAG 2.2 visible label/name alignment, keyboard navigation, `:focus-visible`, RTL Urdu script input, and truthful missing-engine states.
+- [x] Conditional MP3 export UI alongside lossless WAV download.
 
 ## Phase 4: Packaging and handover
 - Reproducible setup instructions.

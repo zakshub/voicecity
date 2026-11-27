@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoiceCity — Local Personal Voice Studio</title>
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main workspace</a>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="9" width="2.5" height="6" rx="1.25" fill="currentColor" />
+            <rect x="7.5" y="5" width="2.5" height="14" rx="1.25" fill="currentColor" />
+            <rect x="12" y="3" width="2.5" height="18" rx="1.25" fill="currentColor" />
+            <rect x="16.5" y="7" width="2.5" height="10" rx="1.25" fill="currentColor" />
+            <rect x="20.5" y="10" width="1.5" height="4" rx="0.75" fill="currentColor" />
+          </svg>
+        </div>
+        <div>
+          <span class="brand-name">VoiceCity</span>
+          <span class="brand-tag">Local Voice Studio</span>
+        </div>
+      </div>
+
+      <nav class="nav-list" role="tablist" aria-orientation="vertical" aria-label="Workspace views">
+        <button type="button" class="nav-item active" data-view="dashboard" role="tab" aria-selected="true" aria-controls="view-dashboard" id="tab-dashboard">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Dashboard</span>
+        </button>
+        <button type="button" class="nav-item" data-view="voices" role="tab" aria-selected="false" aria-controls="view-voices" id="tab-voices">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Voice Library</span>
+          <span class="nav-count" id="nav-voice-count">0</span>
+        </button>
+        <button type="button" class="nav-item" data-view="create-voice" role="tab" aria-selected="false" aria-controls="view-create-voice" id="tab-create-voice">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Create Voice Profile</span>
+        </button>
+        <button type="button" class="nav-item" data-view="studio" role="tab" aria-selected="false" aria-controls="view-studio" id="tab-studio">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Text to Speech Studio</span>
+        </button>
+        <button type="button" class="nav-item" data-view="preview" role="tab" aria-selected="false" aria-controls="view-preview" id="tab-preview">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Audio Preview</span>
+        </button>
+        <button type="button" class="nav-item" data-view="history" role="tab" aria-selected="false" aria-controls="view-history" id="tab-history">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Generation History</span>
+          <span class="nav-count" id="nav-history-count">0</span>
+        </button>
+        <button type="button" class="nav-item" data-view="settings" role="tab" aria-selected="false" aria-controls="view-settings" id="tab-settings">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Settings</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="privacy-pill" id="sidebar-privacy-status">
+          <span class="status-dot status-ok" aria-hidden="true"></span>
+          <span>Local-Only · 127.0.0.1</span>
+        </div>
+        <div class="engine-pill" id="sidebar-engine-status">
+          <span class="status-dot status-warn" id="sidebar-engine-dot" aria-hidden="true"></span>
+          <span id="sidebar-engine-label">Checking engine…</span>
+        </div>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div>
+          <h1 class="page-title" id="topbar-title">Dashboard</h1>
+          <p class="page-subtitle" id="topbar-subtitle">Private, local-first Urdu and English voice studio.</p>
+        </div>
+        <div class="topbar-actions">
+          <span class="badge badge-neutral" id="topbar-processing-badge">Processing: On Device</span>
+          <button type="button" class="btn btn-secondary" id="btn-refresh-all">Refresh Status</button>
+        </div>
+      </header>
+
+      <div id="global-toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+      <main id="main-content" class="main-content" tabindex="-1">
+
+        <!-- 1. DASHBOARD -->
+        <section id="view-dashboard" class="view active" role="tabpanel" aria-labelledby="tab-dashboard">
+          <div id="dashboard-engine-banner" class="callout callout-warn" hidden></div>
+
+          <div class="metric-grid">
+            <article class="metric-card">
+              <span class="metric-label">Voice Profiles</span>
+              <strong class="metric-value" id="dash-voice-count">0</strong>
+              <span class="metric-hint">Stored locally outside Git</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">Generated Clips</span>
+              <strong class="metric-value" id="dash-gen-count">0</strong>
+              <span class="metric-hint">WAV preview &amp; export</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">Speech Engine</span>
+              <strong class="metric-value metric-value-sm" id="dash-engine-name">—</strong>
+              <span class="metric-hint" id="dash-engine-state">Checking readiness…</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">Host Compute</span>
+              <strong class="metric-value metric-value-sm" id="dash-compute-mode">—</strong>
+              <span class="metric-hint" id="dash-compute-hint">Probing hardware…</span>
+            </article>
+          </div>
+
+          <div class="two-col">
+            <div class="panel">
+              <div class="panel-header">
+                <h2>Quick Workflow</h2>
+                <span class="badge badge-ok">No Cloud Upload</span>
+              </div>
+              <ol class="workflow-steps">
+                <li>
+                  <strong>Import your WAV recording once</strong>
+                  <p>VoiceCity validates your ~2-minute recording, keeps the original untouched, and automatically extracts a clean 6–10 second reference segment.</p>
+                </li>
+                <li>
+                  <strong>Compose in Urdu, English, or Mixed script</strong>
+                  <p>Select explicit language mode with RTL Urdu script support and live mixed-language segmentation preview.</p>
+                </li>
+                <li>
+                  <strong>Preview &amp; export locally</strong>
+                  <p>Compare attempts side by side and download WAV (plus MP3 when ffmpeg is installed).</p>
+                </li>
+              </ol>
+              <div class="action-row">
+                <button type="button" class="btn btn-primary" data-goto="create-voice">Import Voice Recording</button>
+                <button type="button" class="btn btn-secondary" data-goto="studio">Open Speech Studio</button>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h2>Recent Voice Profiles</h2>
+                <button type="button" class="btn-link" data-goto="voices">Manage all</button>
+              </div>
+              <div id="dash-recent-voices" class="compact-list"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Recent Generations</h2>
+              <button type="button" class="btn-link" data-goto="history">View history</button>
+            </div>
+            <div id="dash-recent-generations" class="compact-list"></div>
+          </div>
+        </section>
+
+        <!-- 2. VOICE LIBRARY -->
+        <section id="view-voices" class="view" role="tabpanel" aria-labelledby="tab-voices" hidden>
+          <div class="toolbar">
+            <div class="field-inline">
+              <label for="voice-search-input">Filter voices</label>
+              <input id="voice-search-input" type="search" placeholder="Search by profile name or file…" />
+            </div>
+            <button type="button" class="btn btn-primary" data-goto="create-voice">+ Create Voice Profile</button>
+          </div>
+          <div id="voices-list-container" class="stack-list"></div>
+        </section>
+
+        <!-- 3. CREATE VOICE PROFILE -->
+        <section id="view-create-voice" class="view" role="tabpanel" aria-labelledby="tab-create-voice" hidden>
+          <div class="two-col">
+            <form id="create-voice-form" class="panel" novalidate>
+              <div class="panel-header">
+                <h2>Import Personal WAV Recording</h2>
+                <span class="badge badge-neutral">WAV PCM Only</span>
+              </div>
+
+              <div class="form-group">
+                <label for="voice-name-input">Profile Name</label>
+                <input id="voice-name-input" name="display_name" type="text" required maxlength="120" placeholder="e.g., Zak Personal Voice" aria-describedby="voice-name-help" />
+                <p id="voice-name-help" class="field-help">Give this local voice profile a clear name you will recognize in the Studio.</p>
+              </div>
+
+              <div class="form-group">
+                <label for="voice-file-input">Voice Recording (.wav)</label>
+                <div class="dropzone" id="voice-dropzone">
+                  <input id="voice-file-input" name="file" type="file" accept=".wav,audio/wav,audio/x-wav" required aria-describedby="voice-file-help" />
+                  <p class="dropzone-title" id="dropzone-filename">Choose your ~2-minute WAV file or drop it here</p>
+                  <p id="voice-file-help" class="field-help">Uncompressed WAV up to 100 MB. Your original file is preserved untouched and stored only in your local data directory.</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="ref-duration-slider">Automatic Reference Segment Length: <output id="ref-duration-output" for="ref-duration-slider">8.0s</output></label>
+                <input id="ref-duration-slider" name="target_reference_seconds" type="range" min="4" max="14" step="1" value="8" aria-describedby="ref-duration-help" />
+                <p id="ref-duration-help" class="field-help">VoiceCity automatically scans your full recording and extracts the cleanest active speech window (6–10 seconds is ideal for zero-shot voice cloning).</p>
+              </div>
+
+              <div class="form-group">
+                <label for="voice-transcript-input">Reference Segment Transcript (Optional)</label>
+                <textarea id="voice-transcript-input" name="reference_transcript" rows="2" placeholder="Optional: exact words spoken in the reference clip (improves F5-TTS alignment and avoids extra ASR loading)" aria-describedby="voice-transcript-help"></textarea>
+                <p id="voice-transcript-help" class="field-help">You can leave this empty now and add or refine it later in Voice Library after listening to the prepared clip.</p>
+              </div>
+
+              <div class="form-group">
+                <label for="voice-notes-input">Notes (Optional)</label>
+                <input id="voice-notes-input" name="notes" type="text" maxlength="1000" placeholder="e.g., Recorded in quiet room on USB mic" />
+              </div>
+
+              <div class="form-group checkbox-group">
+                <input id="ownership-checkbox" name="ownership_confirmed" type="checkbox" required aria-describedby="ownership-help" />
+                <div>
+                  <label for="ownership-checkbox">I confirm this is my own voice or I have explicit authorization from the speaker</label>
+                  <p id="ownership-help" class="field-help">VoiceCity is strictly for personal and authorized voice cloning. Audio never leaves this machine.</p>
+                </div>
+              </div>
+
+              <div id="create-voice-error" class="callout callout-error" role="alert" hidden></div>
+
+              <div class="action-row">
+                <button type="submit" class="btn btn-primary" id="btn-submit-voice">Import &amp; Inspect Recording</button>
+                <button type="reset" class="btn btn-secondary">Clear Form</button>
+              </div>
+            </form>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h2>Audio Inspection &amp; Reference Result</h2>
+              </div>
+              <div id="import-inspection-result" class="empty-state">
+                <p>Import a WAV file to inspect duration, sample rate, channels, loudness (dBFS), clipping, silence ratio, and preview the automatically prepared reference clip.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. TEXT TO SPEECH STUDIO -->
+        <section id="view-studio" class="view" role="tabpanel" aria-labelledby="tab-studio" hidden>
+          <div id="studio-engine-alert" class="callout callout-warn" hidden></div>
+
+          <div class="studio-grid">
+            <form id="studio-form" class="panel" novalidate>
+              <div class="panel-header">
+                <h2>Compose Speech</h2>
+                <span class="badge badge-neutral" id="studio-local-indicator">Local Inference</span>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="studio-voice-select">Voice Profile</label>
+                  <select id="studio-voice-select" name="voice_profile_id" required></select>
+                </div>
+
+                <div class="form-group">
+                  <label for="studio-language-select">Language Mode</label>
+                  <select id="studio-language-select" name="language">
+                    <option value="ur">Urdu (اردو)</option>
+                    <option value="en">English</option>
+                    <option value="mixed">Mixed Urdu + English</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="label-row">
+                  <label for="studio-text-input">Script Text</label>
+                  <span class="meta-text" id="studio-char-count">0 / 4000 chars</span>
+                </div>
+                <textarea id="studio-text-input" name="text" rows="6" maxlength="4000" dir="auto" required placeholder="یہاں اردو، انگریزی یا ملا جلا متن لکھیں… / Enter Urdu, English, or mixed text…"></textarea>
+                <div class="sample-bar" aria-label="Insert evaluation sample text">
+                  <span>Quick samples:</span>
+                  <button type="button" class="btn-chip" data-sample="ur">Urdu</button>
+                  <button type="button" class="btn-chip" data-sample="en">English</button>
+                  <button type="button" class="btn-chip" data-sample="mixed">Mixed Urdu-English</button>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="studio-speed-slider">Speaking Speed: <output id="studio-speed-output" for="studio-speed-slider">1.00x</output></label>
+                  <input id="studio-speed-slider" name="speed" type="range" min="0.6" max="1.5" step="0.05" value="1.0" />
+                </div>
+
+                <div class="form-group">
+                  <label for="studio-expression-select">Delivery Style</label>
+                  <select id="studio-expression-select" name="expression">
+                    <option value="neutral">Neutral (Natural)</option>
+                    <option value="clear">Clear &amp; Articulate</option>
+                    <option value="warm">Warm Conversational</option>
+                    <option value="calm">Calm Narration</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="studio-error" class="callout callout-error" role="alert" hidden></div>
+
+              <div class="action-row">
+                <button type="submit" class="btn btn-primary" id="btn-generate-speech">Generate Speech</button>
+                <button type="button" class="btn btn-secondary" id="btn-analyze-text">Inspect Language Segments</button>
+              </div>
+            </form>
+
+            <aside class="panel">
+              <div class="panel-header">
+                <h2>Script &amp; Engine Readiness</h2>
+              </div>
+              <div class="subpanel">
+                <h3>Detected Language Segments</h3>
+                <p class="field-help">In Mixed mode, VoiceCity detects Urdu and English spans deterministically so each language uses appropriate phonetics.</p>
+                <div id="studio-segments-preview" class="segments-list">
+                  <span class="meta-text">Type text and click "Inspect Language Segments" to preview routing.</span>
+                </div>
+              </div>
+
+              <div class="subpanel">
+                <h3>Active Speech Engine</h3>
+                <div id="studio-engine-details" class="kv-list"></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- 5. AUDIO PREVIEW -->
+        <section id="view-preview" class="view" role="tabpanel" aria-labelledby="tab-preview" hidden>
+          <div id="preview-main-panel" class="panel">
+            <div class="panel-header">
+              <h2>Audio Preview &amp; Export</h2>
+              <div class="action-row-inline" id="preview-export-actions"></div>
+            </div>
+            <div id="preview-content" class="empty-state">
+              <p>Select any completed clip from Generation History or generate speech in the Studio to preview, compare attempts, and export WAV/MP3.</p>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Compare Previous Attempts</h2>
+            </div>
+            <div id="preview-compare-list" class="compact-list"></div>
+          </div>
+        </section>
+
+        <!-- 6. GENERATION HISTORY -->
+        <section id="view-history" class="view" role="tabpanel" aria-labelledby="tab-history" hidden>
+          <div class="toolbar">
+            <div class="filter-group">
+              <div class="field-inline">
+                <label for="history-voice-filter">Voice</label>
+                <select id="history-voice-filter">
+                  <option value="">All voices</option>
+                </select>
+              </div>
+              <div class="field-inline">
+                <label for="history-lang-filter">Language</label>
+                <select id="history-lang-filter">
+                  <option value="">All languages</option>
+                  <option value="ur">Urdu</option>
+                  <option value="en">English</option>
+                  <option value="mixed">Mixed</option>
+                </select>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary" data-goto="studio">+ New Generation</button>
+          </div>
+          <div id="history-list-container" class="stack-list"></div>
+        </section>
+
+        <!-- 7. SETTINGS & DIAGNOSTICS -->
+        <section id="view-settings" class="view" role="tabpanel" aria-labelledby="tab-settings" hidden>
+          <div class="two-col">
+            <form id="settings-form" class="panel">
+              <div class="panel-header">
+                <h2>Speech &amp; Engine Preferences</h2>
+              </div>
+
+              <div class="form-group">
+                <label for="settings-engine-select">Active Speech Engine</label>
+                <select id="settings-engine-select" name="active_engine"></select>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="settings-device-select">Compute Device</label>
+                  <select id="settings-device-select" name="compute_device">
+                    <option value="auto">Auto (CUDA if available, else CPU)</option>
+                    <option value="cpu">CPU Only</option>
+                    <option value="cuda">NVIDIA CUDA GPU</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="settings-lang-select">Default Language</label>
+                  <select id="settings-lang-select" name="default_language">
+                    <option value="ur">Urdu (اردو)</option>
+                    <option value="en">English</option>
+                    <option value="mixed">Mixed Urdu + English</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="settings-speed-input">Default Speed</label>
+                  <input id="settings-speed-input" name="default_speed" type="number" min="0.6" max="1.5" step="0.05" value="1.0" />
+                </div>
+
+                <div class="form-group">
+                  <label for="settings-export-select">Default Export Format</label>
+                  <select id="settings-export-select" name="default_export_format">
+                    <option value="wav">WAV (Lossless PCM)</option>
+                    <option value="mp3">MP3 (Requires ffmpeg)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group checkbox-group">
+                <input id="settings-offline-checkbox" name="prefer_offline_only" type="checkbox" checked />
+                <div>
+                  <label for="settings-offline-checkbox">Prefer strict offline inference after model download</label>
+                  <p class="field-help">Blocks unexpected external Hugging Face calls during speech generation.</p>
+                </div>
+              </div>
+
+              <div id="settings-error" class="callout callout-error" role="alert" hidden></div>
+
+              <div class="action-row">
+                <button type="submit" class="btn btn-primary">Save Settings</button>
+              </div>
+            </form>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h2>Local Storage &amp; Privacy Boundaries</h2>
+                <span class="badge badge-ok">Loopback Bound</span>
+              </div>
+              <div id="settings-storage-kv" class="kv-list"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Available Engines &amp; License Audit</h2>
+            </div>
+            <div id="settings-engines-list" class="stack-list"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Host Hardware Diagnostics</h2>
+              <span class="meta-text" id="diag-host-badge"></span>
+            </div>
+            <div id="settings-hardware-kv" class="kv-list"></div>
+            <div id="settings-hardware-warnings" class="stack-list"></div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>
